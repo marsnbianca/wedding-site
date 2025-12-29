@@ -11,7 +11,6 @@
   if (!host) {
     host = document.createElement("div");
     host.id = "rsvpHostOverlay";
-    // hidden by default
     host.style.display = 'none';
     document.body.appendChild(host);
 
@@ -22,7 +21,7 @@
 
       /* card base: transitions for width/padding/height */
       ".rsvp-modal-card{ position:relative; width:auto; max-width:96vw; box-sizing:border-box; background:#fff; border-radius:0.75rem; overflow:visible;",
-      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease, width .18s ease, padding .18s ease, height .18s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
+      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease, width .18s ease, padding .18s ease, max-height .18s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
 
       /* Mobile: slightly wider allowed */
       "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(96vw, 26rem); } }",
@@ -54,32 +53,32 @@
     }
   }
 
-  // Breakpoint-based caps and padding clamp ranges (returns relative caps + px fallbacks)
+  // Breakpoint-based max-height recommendations (relative units -> compute px)
   function breakpointConfig() {
     var vw = window.innerWidth || document.documentElement.clientWidth;
     var vh = window.innerHeight || document.documentElement.clientHeight;
     if (vw >= 1008) {
-      // Desktop
+      // Desktop: recommended max ~65vh, capped to 650px
       return {
-        maxHeightVh: 0.65,    // 65vh cap
-        maxHeightPxCap: 650,  // don't exceed 650px
+        maxHeightVh: 0.65,
+        maxHeightPxCap: 650,
         padMinRem: 0.8,
         padMaxRem: 1.6,
-        widthVw: 70           // target vw used for card.style.width (CSS still caps by max-width)
+        widthVw: 70
       };
     } else if (vw >= 641) {
-      // Tablet
+      // Tablet: recommended max ~60vh
       return {
-        maxHeightVh: 0.60,    // 60vh
-        maxHeightPxCap: Math.round(vh * 0.9), // large relative cap
+        maxHeightVh: 0.60,
+        maxHeightPxCap: Math.round(vh * 0.9),
         padMinRem: 0.7,
         padMaxRem: 1.2,
         widthVw: 82
       };
     } else {
-      // Mobile
+      // Mobile: recommended max ~95vh
       return {
-        maxHeightVh: 0.95,    // allow up to 95vh on mobile
+        maxHeightVh: 0.95,
         maxHeightPxCap: Math.round(vh * 0.95),
         padMinRem: 0.5,
         padMaxRem: 1.0,
@@ -88,20 +87,7 @@
     }
   }
 
-  // per-step desired fraction of viewport height (desktop baseline)
-  const desktopStepVH = {
-    search: 0.30,
-    matches: 0.35,
-    attendance_single: 0.30,
-    attendance_multi: 0.50,
-    transport: 0.30,
-    phone: 0.28,
-    notes: 0.28,
-    review: 0.35,
-    thanks: 0.28
-  };
-
-  // padding mapping (preferred rem) per step
+  // per-step preferred padding (rem)
   function preferredPaddingRem(stepName) {
     const mapping = {
       search: 0.6,
@@ -117,73 +103,44 @@
     return mapping[stepName] || 0.8;
   }
 
-  // convert rem to px
   function remToPx(rem) {
     var rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     return rem * rootFs;
   }
 
-  // clamp a number between min and max
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
-  // compute and apply size for a given step; uses only step name and maxSeats
-  function sizeForStep(stepName, maxSeats) {
+  // Apply padding (top/bottom) and set max-height only — do not enforce minimum heights
+  function applyPaddingAndMaxHeight(stepName, maxSeats) {
     if (!iframe || !card) return;
     var cfg = breakpointConfig();
     var vh = window.innerHeight || document.documentElement.clientHeight;
-    var vw = window.innerWidth || document.documentElement.clientWidth;
 
-    // determine base fraction
-    var fraction;
-    if (stepName === 'attendance') {
-      fraction = (maxSeats && maxSeats > 1) ? desktopStepVH.attendance_multi : desktopStepVH.attendance_single;
-    } else {
-      fraction = desktopStepVH[stepName] || desktopStepVH.search;
-    }
+    // determine padding rem and clamp
+    var pref = preferredPaddingRem(stepName || '');
+    var padRem = clamp(pref, cfg.padMinRem, cfg.padMaxRem);
+    var padHRem = Math.max(0.6, padRem * 0.6); // horizontal padding smaller
 
-    // adjust fraction slightly by breakpoint (tablet/mobile)
-    if (vw >= 1008) {
-      // desktop: fraction as-is
-    } else if (vw >= 641) {
-      fraction = fraction * 0.95;
-    } else {
-      fraction = fraction * 1.0;
-    }
+    // apply vertical padding prominently (top + bottom)
+    card.style.paddingTop = padRem + 'rem';
+    card.style.paddingBottom = padRem + 'rem';
+    // keep left/right reasonable
+    card.style.paddingLeft = padHRem + 'rem';
+    card.style.paddingRight = padHRem + 'rem';
 
-    // desired height (using vh)
-    var desiredH = Math.round(vh * fraction);
-
-    // padding: take preferred rem for step, then clamp it within breakpoint's min/max
-    var prefRem = preferredPaddingRem(stepName || '');
-    var padRem = clamp(prefRem, cfg.padMinRem, cfg.padMaxRem);
-    var padPx = remToPx(padRem);
-
-    // compute minimum height based on base content + padding
-    var baseContentRem = 5.5; // approximate content height in rem
-    var baseContentPx = remToPx(baseContentRem);
-    var minH = Math.round(baseContentPx + padPx * 2);
-    // also enforce a viewport-relative min (12vh) and small px floor
-    minH = Math.max(minH, Math.round(vh * 0.12), 120);
-
-    // compute max height from config (vh cap) and absolute px cap
-    var maxH_fromVh = Math.round(vh * cfg.maxHeightVh);
-    var maxH = Math.min(maxH_fromVh, cfg.maxHeightPxCap);
-
-    // final height clamped
-    var finalH = clamp(desiredH, minH, maxH);
-
-    // apply height using px (calculated from vh/min bases) — uses relative vh in calculation
-    iframe.style.height = finalH + 'px';
-    // also set a CSS max-height using vh to keep it responsive to viewport changes
-    iframe.style.maxHeight = Math.round(cfg.maxHeightVh * 100) + 'vh';
-
-    // width target: use cfg.widthVw (do not override CSS max-width)
+    // set card width target (relative) — CSS max-width still applies
     card.style.width = cfg.widthVw + 'vw';
 
-    // apply clamped padding using rem unit (keeps relative behavior)
-    card.style.padding = padRem + 'rem';
+    // set iframe max-height (px) computed from vh * config but not exceeding px cap
+    var maxH_fromVh = Math.round(vh * cfg.maxHeightVh);
+    var maxH_px = Math.min(maxH_fromVh, cfg.maxHeightPxCap);
+    iframe.style.maxHeight = maxH_px + 'px';
+    // also set max-height in vh (helps on resize)
+    iframe.style.setProperty('max-height', Math.round(cfg.maxHeightVh * 100) + 'vh');
 
-    // ensure card height auto so iframe controls internal scroll
+    // do NOT set iframe.style.height or any minimum — let content determine natural height up to max
+    // ensure overflow is handled inside iframe if content larger than max (iframe will show its own scroll)
+    // (No min-height enforcement here)
     card.style.height = 'auto';
   }
 
@@ -202,12 +159,10 @@
   }
 
   function openRSVP(e) {
-    console.debug('rsvp-overlay: openRSVP called');
     if (e && typeof e.preventDefault === "function") { e.preventDefault(); try { e.stopPropagation(); } catch (_) {} }
 
     lastFocus = document.activeElement;
 
-    // clear host and show
     host.innerHTML = '';
     host.style.display = 'flex';
     host.style.pointerEvents = 'auto';
@@ -227,10 +182,8 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // initial modest height until child sends step
-    var initialH = Math.round(window.innerHeight * 0.38);
-    iframe.style.height = initialH + 'px';
-    iframe.style.maxHeight = Math.round(window.innerHeight * 0.95) + 'px';
+    // Do not set a fixed height. Let content size the iframe up to the max-height we set later.
+    iframe.style.height = 'auto';
     iframe.style.boxSizing = 'border-box';
 
     card.appendChild(iframe);
@@ -241,10 +194,10 @@
     };
     host.addEventListener('click', hostClickHandler);
 
+    // when iframe loads, request the active step so we can set padding & max-height
     iframe.addEventListener('load', function () {
-      console.debug('rsvp-overlay: iframe load event — requesting step');
-      try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) { console.debug('rsvp-overlay: REQUEST_STEP post failed', err); }
-      setTimeout(function(){ try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) { console.debug('rsvp-overlay: delayed REQUEST_STEP failed', err); } }, 160);
+      try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) {}
+      setTimeout(function(){ try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) {} }, 160);
     });
 
     lockScroll(true);
@@ -252,7 +205,6 @@
   }
 
   function closeRSVP() {
-    console.debug('rsvp-overlay: closeRSVP called');
     if (hostClickHandler) {
       try { host.removeEventListener('click', hostClickHandler); } catch (_) {}
       hostClickHandler = null;
@@ -282,27 +234,24 @@
     } catch (_) {}
   }, true);
 
-  // message handler — step-driven sizing
+  // Receive step messages from child and apply padding + max-height
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
       if (typeof e.origin === 'string') {
         var ok = (e.origin === RSVP_ORIGIN) || e.origin.startsWith("https://script.googleusercontent.com") || e.origin.startsWith("https://script.google.com") || e.origin.startsWith(RSVP_URL);
-        if (!ok) { console.warn('rsvp-overlay: ignoring message from origin', e.origin); return; }
+        if (!ok) { return; }
       }
     } catch (_) {}
 
     var data = e.data;
     if (!data) return;
 
-    console.debug('rsvp-overlay: received message', data && data.type ? data.type : data);
-
     if (typeof data === 'object' && data.type) {
       if (data.type === 'RSVP:STEP') {
         var step = data.step || 'search';
         var maxSeats = parseInt(data.maxSeats || 1, 10) || 1;
-        console.debug('rsvp-overlay: sizing for step', step, 'maxSeats', maxSeats);
-        sizeForStep(step, maxSeats);
+        applyPaddingAndMaxHeight(step, maxSeats);
         if (typeof data.hasBottomClose !== 'undefined') setTopCloseVisible(!data.hasBottomClose);
         return;
       }
@@ -321,12 +270,12 @@
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // expose API for manual testing and control
+  // expose API
   window.__rsvp = {
     open: openRSVP,
     close: closeRSVP,
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: initialized (step-driven sizing, desktop 70vw cap; mobile up to 95vh)');
+  console.log('rsvp-overlay: initialized (padding-driven; max-height caps only)');
 })();
