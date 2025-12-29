@@ -3,7 +3,6 @@
   --space: 1.25rem;
   --accent: #b86b9d;
   --text-dark: #04293a;
-  --text-light: #fff;
   --panel-height: 100vh;
 }
 
@@ -16,7 +15,7 @@ body {
   color: var(--text-dark);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  background: linear-gradient(180deg,#071428 0%, #071428 100%); /* deep background for below content */
+  background: linear-gradient(180deg,#071428 0%, #071428 100%);
   overflow-x: hidden;
 }
 
@@ -40,21 +39,32 @@ body {
   isolation: isolate;
 }
 
-/* PANEL STYLING */
+/* ---------- Ombré sky gradients for panels ---------- */
 
-/* Panel 1: clouds-only — lighter sky */
+/* Panel 1: clouds-only — lighter ombre sky */
 .panel-clouds {
-  background: linear-gradient(180deg, #dff6ff 0%, #bfe9ff 100%);
+  background: linear-gradient(180deg,
+    #e6f9ff 0%,
+    #d8f2ff 30%,
+    #bfe9ff 60%,
+    #b3e2ff 100%);
 }
 
-/* Panel 2: sky transition (still sky, slightly darker to hint change) */
+/* Panel 2: sky transition (slightly deeper ombre) */
 .panel-sky {
-  background: linear-gradient(180deg, #bfe9ff 0%, #a0d8f7 100%);
+  background: linear-gradient(180deg,
+    #d8f2ff 0%,
+    #c4e7ff 30%,
+    #a9ddff 65%,
+    #8fcff7 100%);
 }
 
-/* Panel 3: content — use deeper tone to transition into site style */
+/* Panel 3: content ombre (fades into light content background) */
 .panel-content {
-  background: linear-gradient(180deg, #eaf7ff 0%, #f3f9ff 100%);
+  background: linear-gradient(180deg,
+    #cfeeff 0%,
+    #e6f7ff 45%,
+    #f7fbff 100%);
 }
 
 /* Parallax layers (background images, clouds, overlays) */
@@ -74,9 +84,9 @@ body {
   pointer-events: none;
 }
 
-/* Cloud layers: 50% smaller than previous: previously auto 60% -> now auto 30% */
+/* Cloud layers: 70% smaller (previous reference was about 60% => now ~18%) */
 .cloud-layer {
-  background-size: auto 30%;       /* 50% smaller than the previous 60% */
+  background-size: auto 18%;
   opacity: 0.98;
   z-index: 1;
   mix-blend-mode: normal;
@@ -115,7 +125,7 @@ body {
   color: #064a6f;
 }
 
-/* Image buttons: height controlled with clamp (keeps previous relative sizing, responsive) */
+/* Image buttons */
 .image-button {
   display: inline-block;
   margin: 0.5rem auto;
@@ -126,7 +136,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 
   width: auto;
-  height: clamp(3.5rem, 8vh, 5rem); /* responsive, capped around 80px */
+  height: clamp(3.5rem, 8vh, 5rem);
   object-fit: contain;
   max-width: 90%;
 }
@@ -144,18 +154,15 @@ body {
   padding-top: 2rem;
   padding-bottom: 4rem;
 }
-
-/* minimal styling for footer text */
 footer small { color: #bfcbd6; }
 
 /* Responsive adjustments */
 @media (max-width: 900px) {
   :root { --panel-height: 70vh; }
-
   .parallax-layer{ width: 220%; left: 50%; transform: translateX(-50%); }
 
-  .panel-clouds { background: linear-gradient(180deg, #dff6ff 0%, #cdefff 100%); }
-  .panel-sky { background: linear-gradient(180deg, #cdefff 0%, #b5e6ff 100%); }
+  /* clouds slightly larger on smaller screens for visibility */
+  .cloud-layer { background-size: auto 30%; }
 
   .section-content { padding: 1rem; }
   .image-button { height: clamp(3rem, 9vh, 4.5rem); }
@@ -163,8 +170,7 @@ footer small { color: #bfcbd6; }
 
 @media (max-width: 480px) {
   :root { --panel-height: 60vh; }
-
-  .cloud-layer { background-size: auto 40%; } /* a bit larger on tiny screens for visibility */
+  .cloud-layer { background-size: auto 35%; } /* larger on tiny screens to remain visible */
   .image-button { height: clamp(2.6rem, 10vh, 4rem); }
 }
 
