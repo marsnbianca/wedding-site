@@ -15,21 +15,26 @@
     var style = document.createElement('style');
     style.textContent = [
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
-      " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:12px; box-sizing:border-box; }",
+      " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:1rem; box-sizing:border-box; }",
 
-      /* Smaller modal widths per requested breakpoints */
-      ".rsvp-modal-card{ position:relative; width:100%; max-width:96vw; background:#fff; border-radius:12px; overflow:visible;",
-      " box-shadow:0 14px 40px rgba(0,0,0,0.24); transition:transform .18s ease,opacity .12s ease; padding:0; }",
+      /* Modal sizing using relative units */
+      ".rsvp-modal-card{ position:relative; width:100%; max-width:96vw; background:#fff; border-radius:0.75rem; overflow:visible;",
+      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease; padding:0; }",
 
-      /* Tablet */
-      "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:72vw; } }",
-      /* Desktop: smaller than before */
-      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(680px, 60vw); } }",
+      /* Mobile (<=640px): ~80-90% width, but keep a sensible max to avoid ultra wide on large phones */
+      "@media (max-width:640px){ .rsvp-modal-card{ max-width:90vw; } }",
+
+      /* Tablet (641 - 1007px): ~60-80% */
+      "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:76vw; } }",
+
+      /* Desktop (>=1008px): ~50-70% */
+      "@media (min-width:1008px){ .rsvp-modal-card{ max-width:60vw; } }",
 
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }",
 
-      ".rsvp-modal-close{ position:absolute; right:10px; top:10px; z-index:10; background:rgba(255,255,255,0.95); border:0; width:36px; height:36px;",
-      " border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.12); }"
+      ".rsvp-modal-close{ position:absolute; right:0.6rem; top:0.6rem; z-index:10; background:rgba(255,255,255,0.95); border:0;",
+      " width:2.25rem; height:2.25rem; border-radius:0.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center;",
+      " box-shadow:0 0.3rem 1rem rgba(0,0,0,0.12); }"
     ].join('');
     document.head.appendChild(style);
   }
@@ -48,19 +53,28 @@
     }
   }
 
-  // Reduced caps (smaller than before)
+  // Breakpoint-based max heights (relative units)
   function breakpointMaxHeight() {
     var w = window.innerWidth || document.documentElement.clientWidth;
-    if (w >= 1008) return Math.round(Math.min(window.innerHeight * 0.60, 600)); // desktop: up to 60vh or 600px
-    if (w >= 641) return Math.round(Math.min(window.innerHeight * 0.9, 520));    // tablet: up to 520px
-    return Math.floor(window.innerHeight * 0.95); // mobile: up to 95vh
+    if (w >= 1008) {
+      // Desktop: up to ~65vh (use vh)
+      return Math.round(window.innerHeight * 0.65);
+    }
+    if (w >= 641) {
+      // Tablet: up to ~55vh
+      return Math.round(window.innerHeight * 0.55);
+    }
+    // Mobile: fit within ~75vh
+    return Math.round(window.innerHeight * 0.75);
   }
 
+  // Set iframe height from child-reported height but cap by breakpoint (use vh based cap)
   function setHeights(childHeight) {
     if (!iframe || !card) return;
     var maxH = breakpointMaxHeight();
     var h = parseInt(childHeight, 10) || 0;
-    var finalH = Math.min(Math.max(h, 220), maxH); // sensible min 220
+    // clamp: min sensible 220, max = maxH
+    var finalH = Math.min(Math.max(h, Math.round(window.innerHeight * 0.25)), maxH);
     iframe.style.height = finalH + 'px';
     card.style.height = 'auto';
   }
@@ -70,15 +84,12 @@
     topCloseBtn = document.createElement('button');
     topCloseBtn.className = 'rsvp-modal-close';
     topCloseBtn.setAttribute('aria-label', 'Close RSVP');
-    topCloseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    topCloseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     topCloseBtn.addEventListener('click', closeRSVP);
   }
 
   function openRSVP(e) {
-    if (e && typeof e.preventDefault === "function") {
-      e.preventDefault();
-      try { e.stopPropagation(); } catch (_) {}
-    }
+    if (e && typeof e.preventDefault === "function") { e.preventDefault(); try { e.stopPropagation(); } catch (_) {} }
 
     lastFocus = document.activeElement;
 
@@ -101,7 +112,8 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    iframe.style.height = Math.min(breakpointMaxHeight(), 480) + 'px'; // initial smaller height
+    // initial, modest height until child posts size
+    iframe.style.height = Math.round(window.innerHeight * 0.4) + 'px';
 
     card.appendChild(iframe);
     host.appendChild(card);
@@ -118,7 +130,7 @@
           var h = Math.max(doc.documentElement.scrollHeight || 0, (doc.body && doc.body.scrollHeight) || 0);
           if (h) setHeights(h);
         }
-      } catch (err) {}
+      } catch (err) { /* cross-origin - ignore */ }
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
     });
 
@@ -147,7 +159,7 @@
     topCloseBtn.style.display = visible ? '' : 'none';
   }
 
-  // Delegated click open
+  // delegated open
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
@@ -163,7 +175,7 @@
     } catch (_) {}
   }, true);
 
-  // Messages from iframe
+  // messages from iframe
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
@@ -186,20 +198,14 @@
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
-  // ESC closes overlay
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // create top close and show by default
   createTopClose();
   setTopCloseVisible(true);
 
-  window.__rsvp = {
-    open: openRSVP,
-    close: closeRSVP,
-    info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
-  };
+  window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
 
-  console.log('rsvp-overlay: responsive modal initialized (smaller sizes + top X)');
+  console.log('rsvp-overlay: responsive modal initialized (relative units)');
 })();
