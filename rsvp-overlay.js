@@ -1,7 +1,7 @@
 // rsvp-overlay.js — popup-based RSVP launcher (replace existing file in wedding-site repo)
 (function () {
   // Use your Apps Script exec URL here (the Web App "exec" URL)
-  var RSVP_URL = "https://script.google.com/macros/s/AKfycbzdV48pD-cQn5O_lNhnqh1ijjaTbyMG0IIAu2HAWLe2BXxBAWfpTl2Evc1w2S6uX3VP/exec";
+  var RSVP_URL = "https://script.google.com/macros/s/AKfycbyYUd5yZR7qjdU4_0xoX-qGCzhIMDgU5jUzqgKev-68nu3kfnmS6iqzkd7Diw9vaGxe/exec";
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
   if (!RSVP_URL || RSVP_URL.indexOf("script.google.com") === -1) {
