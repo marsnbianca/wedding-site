@@ -1,7 +1,7 @@
 // buttons.js
 // Generalized image-button handling for site image buttons (RSVP, MAP, etc.)
 // Swaps primary/hover images, supports keyboard focus and pointer events.
-// Keeps element ids so other scripts (e.g., rsvp-overlay.js) can find them.
+// Keeps element ids and any title/aria-label so other scripts (e.g., rsvp-overlay.js) can find them.
 
 (function () {
   if (document.readyState === 'loading') {
@@ -22,10 +22,17 @@
       const el = document.getElementById(id);
       if (!el) return;
 
-      // ensure element is an <img> that acts as a button; preserve id so other scripts can hook.
+      // Only set alt (user-visible); do not overwrite title/aria-label in case overlay script relies on them
       el.src = defaultSrc;
       el.alt = altText;
-      el.setAttribute('aria-label', altText);
+      // don't overwrite existing aria-label or title (preserve legacy selectors)
+      if (!el.getAttribute('aria-label')) {
+        el.setAttribute('aria-label', altText);
+      }
+      if (!el.getAttribute('title')) {
+        el.setAttribute('title', altText);
+      }
+
       // ensure keyboard focusability if not a native button
       if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
       if (!el.hasAttribute('role')) el.setAttribute('role', 'button');
@@ -50,7 +57,12 @@
         }
       });
 
-      // touch: do not change on tap by default (users expect tap). If you want visual feedback on touch, uncomment:
+      // Debug: small console log to help verify the element is clickable
+      el.addEventListener('click', (e) => {
+        console.debug('[buttons.js] click fired on', id, 'event:', e);
+      });
+
+      // Touch: left commented - touch users expect tapping to activate overlay
       // el.addEventListener('touchstart', () => { el.src = hoverSrc; });
       // el.addEventListener('touchend', () => { setTimeout(() => el.src = defaultSrc, 200); });
     });
