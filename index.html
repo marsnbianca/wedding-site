@@ -10,7 +10,6 @@
     .hero { text-align:center; }
     .rsvp-btn { display:inline-block; cursor:pointer; border:0; background:transparent; }
     .content { padding: 2rem; }
-    /* overlay host will be injected by rsvp-overlay.js */
   </style>
 </head>
 <body>
@@ -20,7 +19,7 @@
     <h1>Mars & Bianca</h1>
     <p>We're getting married — join us</p>
 
-    <!-- Your picture button (set alt/title/aria-label to openRSVP) -->
+    <!-- Picture button: keep alt/title/aria-label = "openRSVP" -->
     <img src="assets/buttons/RSVP-1.png"
          alt="openRSVP"
          aria-label="openRSVP"
@@ -37,7 +36,7 @@
   <p>Parallax, animations and more go here — build your pages however you like.</p>
 </div>
 
-<!-- Load overlay script (relative path). Make sure rsvp-overlay.js is in the same directory as index.html -->
+<!-- modal overlay script (relative path) -->
 <script src="rsvp-overlay.js"></script>
 
 </body>
