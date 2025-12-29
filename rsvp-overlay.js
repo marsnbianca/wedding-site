@@ -6,10 +6,13 @@
   var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- REPLACE with your frontend Pages URL
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
+  // Ensure host element exists immediately
   var host = document.getElementById("rsvpHostOverlay");
   if (!host) {
     host = document.createElement("div");
     host.id = "rsvpHostOverlay";
+    // hidden by default
+    host.style.display = 'none';
     document.body.appendChild(host);
 
     var style = document.createElement('style');
@@ -58,14 +61,14 @@
     var vh = window.innerHeight || document.documentElement.clientHeight;
     var caps = {};
     if (w >= 1008) {
-      caps.maxHeightPx = Math.min(650, Math.round(vh * 0.65)); // desktop cap ~650px or 65vh
-      caps.widthCap = Math.min(Math.round(w * 0.5), 50 * parseFloat(getComputedStyle(document.documentElement).fontSize)); // 50vw capped by 50rem
+      caps.maxHeightPx = Math.min(650, Math.round(vh * 0.65));
+      caps.widthCap = Math.min(Math.round(w * 0.5), 50 * parseFloat(getComputedStyle(document.documentElement).fontSize));
     } else if (w >= 641) {
-      caps.maxHeightPx = Math.round(vh * 0.55); // tablet ~55vh
-      caps.widthCap = Math.round(w * 0.76); // 76vw
+      caps.maxHeightPx = Math.round(vh * 0.55);
+      caps.widthCap = Math.round(w * 0.76);
     } else {
-      caps.maxHeightPx = Math.round(vh * 0.75); // mobile ~75vh
-      caps.widthCap = Math.round(w * 0.90); // 90vw
+      caps.maxHeightPx = Math.round(vh * 0.75);
+      caps.widthCap = Math.round(w * 0.90);
     }
     caps.vh = vh;
     caps.vw = w;
@@ -85,7 +88,6 @@
     thanks: 0.28
   };
 
-  // Padding mapping per step (rem strings)
   function paddingForStep(stepName) {
     const mapping = {
       search: '0.6rem',
@@ -101,7 +103,6 @@
     return mapping[stepName] || '0.8rem';
   }
 
-  // Convert rem to px
   function remToPx(remStr) {
     if (!remStr || typeof remStr !== 'string') return 0;
     var m = remStr.match(/^([\d.]+)rem$/);
@@ -111,7 +112,6 @@
     return rem * rootFontSize;
   }
 
-  // Apply sizing using only the step name (and optional maxSeats)
   function sizeForStep(stepName, maxSeats) {
     if (!iframe || !card) return;
     var caps = breakpointCaps();
@@ -133,7 +133,6 @@
     }
 
     var desiredH = Math.round(vh * fraction);
-
     var pad = paddingForStep(stepName || '');
     var padPx = remToPx(pad);
     var baseContentRem = 5.5;
@@ -172,10 +171,12 @@
   }
 
   function openRSVP(e) {
+    console.debug('rsvp-overlay: openRSVP called');
     if (e && typeof e.preventDefault === "function") { e.preventDefault(); try { e.stopPropagation(); } catch (_) {} }
 
     lastFocus = document.activeElement;
 
+    // clear host and show
     host.innerHTML = '';
     host.style.display = 'flex';
     host.style.pointerEvents = 'auto';
@@ -209,15 +210,18 @@
     host.addEventListener('click', hostClickHandler);
 
     iframe.addEventListener('load', function () {
-      try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {}
-      setTimeout(function(){ try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {} }, 160);
+      console.debug('rsvp-overlay: iframe load event');
+      try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) { console.debug('rsvp-overlay: REQUEST_STEP post failed', err); }
+      // second request after a short delay (child might need time to render)
+      setTimeout(function(){ try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) { console.debug('rsvp-overlay: delayed REQUEST_STEP failed', err); } }, 160);
     });
 
     lockScroll(true);
-    console.log('rsvp-overlay: opened modal ->', iframe.src);
+    console.info('rsvp-overlay: opened modal ->', iframe.src);
   }
 
   function closeRSVP() {
+    console.debug('rsvp-overlay: closeRSVP called');
     if (hostClickHandler) {
       try { host.removeEventListener('click', hostClickHandler); } catch (_) {}
       hostClickHandler = null;
@@ -230,9 +234,10 @@
     lastFocus = null;
     iframe = null;
     card = null;
-    console.log('rsvp-overlay: closed');
+    console.info('rsvp-overlay: closed');
   }
 
+  // message handler — step-driven sizing
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
@@ -245,10 +250,13 @@
     var data = e.data;
     if (!data) return;
 
+    console.debug('rsvp-overlay: received message', data && data.type ? data.type : data);
+
     if (typeof data === 'object' && data.type) {
       if (data.type === 'RSVP:STEP') {
         var step = data.step || 'search';
         var maxSeats = parseInt(data.maxSeats || 1, 10) || 1;
+        console.debug('rsvp-overlay: sizing for step', step, 'maxSeats', maxSeats);
         sizeForStep(step, maxSeats);
         if (typeof data.hasBottomClose !== 'undefined') setTopCloseVisible(!data.hasBottomClose);
         return;
@@ -263,14 +271,17 @@
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
+  // ESC closes overlay
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  createTopClose();
-  setTopCloseVisible(true);
-
-  window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
+  // expose API for manual testing and control
+  window.__rsvp = {
+    open: openRSVP,
+    close: closeRSVP,
+    info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
+  };
 
   console.log('rsvp-overlay: initialized (step-driven sizing, desktop 50vw cap)');
 })();
