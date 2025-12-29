@@ -11,9 +11,16 @@
 
 <body>
   <div class="container">
-    <!-- Panel 1: Hero -->
+    <!-- Panel 1: Hero (sky color + clouds) -->
     <header class="parallax-section hero" id="panel-hero" aria-label="Hero">
-      <div class="parallax-layer" data-speed="0.12" data-bg="" aria-hidden="true"></div>
+      <!-- sky base is provided by CSS for .hero; clouds are decorative layers -->
+      <div class="parallax-layer cloud-layer" data-speed="0.04" data-side-speed="0.45" data-dir="-1" data-bg="assets/parallax/cloud1.png" aria-hidden="true"></div>
+      <div class="parallax-layer cloud-layer" data-speed="0.06" data-side-speed="0.35" data-dir="1"  data-bg="assets/parallax/cloud2.png" aria-hidden="true"></div>
+      <div class="parallax-layer cloud-layer" data-speed="0.08" data-side-speed="0.55" data-dir="-1" data-bg="assets/parallax/cloud3.png" aria-hidden="true"></div>
+      <div class="parallax-layer cloud-layer" data-speed="0.10" data-side-speed="0.25" data-dir="1" data-bg="assets/parallax/cloud4.png" aria-hidden="true"></div>
+      <div class="parallax-layer cloud-layer" data-speed="0.14" data-side-speed="0.65" data-dir="-1" data-bg="assets/parallax/cloud5.png" aria-hidden="true"></div>
+
+      <!-- subtle overlay layer for depth -->
       <div class="parallax-layer parallax-layer--overlay" data-speed="0.25" data-bg="" aria-hidden="true"></div>
 
       <div class="section-content">
@@ -63,7 +70,6 @@
       <div class="section-content">
         <h2>Schedule</h2>
         <p class="lead">Ceremony, reception, and after-party timings so you can plan the day.</p>
-        <!-- no text CTAs here per request — image buttons only -->
       </div>
     </section>
 
