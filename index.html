@@ -1,112 +1,246 @@
-:root{
-  --hero-height: 72vh;
-  --max-width: 1200px;
-  --accent: #b86b9d;
-  --text: #222;
-}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mars & Bianca — Wedding</title>
 
-/* Basic layout */
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color:var(--text);
-  background:#fff;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-}
+  <style>
+    /* ---- layout / demo variables ---- */
+    :root{
+      --max-width: 980px;
+      --space: 1.25rem;
+      --accent: #b86b9d;
+      --text: #fff;
+      --panel-height: 100vh; /* default panel height */
+    }
 
-/* HERO */
-.hero{
-  position:relative;
-  height:var(--hero-height);
-  overflow:hidden;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
+    html,body{height:100%}
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      color: var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      /* charcoal / deep-blue background as requested */
+      background: linear-gradient(135deg, #071428 0%, #0e2a44 60%, #123c57 100%);
+      overflow-x: hidden;
+    }
 
-/* Parallax stacking context */
-.parallax{
-  position:relative;
-  width:100%;
-  height:100%;
-  overflow:visible;
-  pointer-events:none; /* content should be interacted with via hero__content */
-}
+    .container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
 
-/* Generic layer styles — use background images or SVGs */
-.parallax__layer{
-  position:absolute;
-  left:50%;
-  transform:translateX(-50%) translateY(0);
-  top:0;
-  width:130%;
-  height:120%;
-  will-change:transform;
-  backface-visibility:hidden;
-  background-repeat:no-repeat;
-  background-position:center top;
-  background-size:cover;
-}
+    /* ---- PARALLAX SECTIONS ---- */
+    .parallax-section{
+      position: relative;
+      height: var(--panel-height);
+      min-height: 480px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+    }
 
-/* Replace these with your real images or inline SVGs */
-.parallax__layer--bg{
-  z-index:0;
-  background-image:linear-gradient(180deg, #f7eef6 0%, #efe0ef 100%);
-  opacity:1;
-}
-.parallax__layer--mid{
-  z-index:1;
-  background-image:radial-gradient(circle at 25% 25%, rgba(184,107,157,0.15), transparent 20%),
-                    radial-gradient(circle at 75% 75%, rgba(50,150,125,0.08), transparent 18%);
-  mix-blend-mode:overlay;
-}
-.parallax__layer--front{
-  z-index:2;
-  background-image:url('https://images.unsplash.com/photo-1503264116251-35a269479413?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s='); /* placeholder */
-  background-size:cover;
-  opacity:0.9;
-  filter:contrast(1.02) saturate(1.05);
-}
+    /* stacking and visual layers */
+    .parallax-layer{
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(0);
+      width: 140%;
+      height: 120%;
+      background-repeat: no-repeat;
+      background-position: center top;
+      background-size: cover;
+      will-change: transform;
+      backface-visibility: hidden;
+      z-index: 0;
+    }
+    .parallax-layer--overlay{
+      mix-blend-mode: overlay;
+      opacity: 0.85;
+    }
 
-/* Foreground content */
-.hero__content{
-  position:relative;
-  z-index:10;
-  pointer-events:auto;
-  text-align:center;
-  max-width:var(--max-width);
-  margin:0 auto;
-  padding:2rem;
-  color:#fff;
-  text-shadow:0 6px 18px rgba(0,0,0,0.4);
-}
-.hero__content h1{
-  margin:0 0 .5rem 0;
-  font-size:clamp(2rem, 4.5vw, 4rem);
-  letter-spacing:0.01em;
-}
-.hero__content p{ margin:0 0 1rem 0; font-size:clamp(1rem, 1.6vw, 1.25rem) }
-.cta{
-  display:inline-block;
-  padding:.6rem 1.1rem;
-  background:var(--accent);
-  color:white;
-  border-radius:999px;
-  text-decoration:none;
-  font-weight:600;
-}
+    /* content above layers */
+    .section-content{
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      color: white;
+      text-shadow: 0 6px 18px rgba(0,0,0,0.35);
+      max-width: calc(var(--max-width) - 2rem);
+      padding: 2rem;
+    }
 
-/* Simple content area below */
-.content{ padding:3rem 1rem; max-width:var(--max-width); margin:0 auto; }
+    /* Example typographic scale for each panel */
+    .hero h1{ margin: 0 0 .5rem 0; font-size: clamp(2rem, 5vw, 4rem); }
+    .hero p.lead{ margin: 0 0 1rem 0; font-size: clamp(1rem, 1.6vw, 1.25rem); color: #f6eef8; }
+    .cta {
+      display:inline-block;
+      padding:.6rem 1.1rem;
+      background:var(--accent);
+      color:white;
+      border-radius:999px;
+      text-decoration:none;
+      font-weight:600;
+      box-shadow: 0 6px 18px rgba(184,107,157,0.18);
+    }
 
-/* Responsive: simpler effect on small screens */
-@media (max-width:900px){
-  .parallax__layer{ width:200%; left:50%; transform:translateX(-50%); }
-}
+    /* RSVP image button */
+    .rsvp-btn {
+      display:block;
+      margin: 1rem auto;
+      width: 120px;
+      height: 80px;
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+      outline: none;
+    }
 
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .parallax__layer { transition:none !important; }
-}
+    /* subtle separators for content sections that follow */
+    .content{
+      padding: 3rem 1rem;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      background: none;
+      color: #fff;
+      text-align: left;
+    }
+
+    /* small-screen adjustments */
+    @media (max-width: 900px){
+      :root{ --panel-height: 70vh; }
+      .parallax-layer{ width: 220%; left: 50%; transform: translateX(-50%); }
+      .parallax-section{ min-height: 420px; }
+      .section-content{ padding: 1rem; }
+      .content { color: #111; } /* keep body text readable on small where panels are smaller */
+    }
+
+    /* Respect prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce){
+      .parallax-layer { transition: none !important; will-change: auto !important; }
+    }
+
+    /* simple fallback when JS disabled: show images as backgrounds via inline styles */
+    .no-js .parallax-layer { position: absolute; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Panel 1: Hero -->
+    <header class="parallax-section hero" id="panel-hero" aria-label="Hero">
+      <!-- layers: set data-speed to adjust scroll movement (higher moves more) -->
+      <div class="parallax-layer" data-speed="0.12" data-bg="" aria-hidden="true"></div>
+      <div class="parallax-layer parallax-layer--overlay" data-speed="0.25" data-bg="" aria-hidden="true"></div>
+
+      <div class="section-content">
+        <h1>Mars & Bianca</h1>
+        <p class="lead">We're getting married — join us</p>
+
+        <!-- RSVP trigger image (updated src + alt per request)
+             Path used in this file: assets/buttons/RSVP1.PNG (relative to this HTML file)
+             Hover behavior is implemented with JS below so the src swaps to RSVP2.PNG on hover/focus.
+        -->
+        <img
+          id="rsvp-trigger"
+          src="assets/buttons/RSVP1.PNG"
+          alt="RSVP"
+          aria-label="RSVP"
+          title="RSVP"
+          class="rsvp-btn"
+          width="120"
+          height="80"
+        />
+
+        <p><a class="cta" href="#details">See details</a></p>
+      </div>
+    </header>
+
+    <!-- Panel 2: Location -->
+    <section class="parallax-section" id="panel-location" aria-label="Location">
+      <div class="parallax-layer" data-speed="0.08" data-bg="" aria-hidden="true"></div>
+      <div class="parallax-layer" data-speed="0.28" data-bg="" aria-hidden="true"></div>
+
+      <div class="section-content">
+        <h2>Location</h2>
+        <p class="lead">A lovely venue in the countryside — directions and parking details below.</p>
+        <p><a class="cta" href="#rsvp">RSVP</a></p>
+      </div>
+    </section>
+
+    <!-- Panel 3: Schedule -->
+    <section class="parallax-section" id="panel-schedule" aria-label="Schedule">
+      <div class="parallax-layer" data-speed="0.06" data-bg="" aria-hidden="true"></div>
+      <div class="parallax-layer parallax-layer--overlay" data-speed="0.18" data-bg="" aria-hidden="true"></div>
+
+      <div class="section-content">
+        <h2>Schedule</h2>
+        <p class="lead">Ceremony, reception, and after-party timings so you can plan the day.</p>
+      </div>
+    </section>
+
+    <!-- Panel 4: Details / Call to action -->
+    <section class="parallax-section" id="panel-details" aria-label="Details">
+      <div class="parallax-layer" data-speed="0.07" data-bg="" aria-hidden="true"></div>
+
+      <div class="section-content">
+        <h2 id="details">Details</h2>
+        <p class="lead">Dietary info, accommodations and more — RSVP to let us know you're coming.</p>
+        <p><a class="cta" href="#rsvp">RSVP</a></p>
+      </div>
+    </section>
+
+    <!-- Fallback content area below panels -->
+    <main class="content" id="rsvp">
+      <h2>More</h2>
+      <p>Static content, links, and the RSVP overlay are below. The parallax sections above are decorative layers and do not replace semantic content.</p>
+      <p style="height: 600px;">(Page body content placeholder — add your text, photos, registry, etc.)</p>
+    </main>
+
+    <footer class="content">
+      <small>© Mars & Bianca</small>
+    </footer>
+  </div>
+
+  <!-- Image hover/focus swap for RSVP button (keeps functionality but swaps visuals on pointer/focus) -->
+  <script>
+    (function () {
+      const img = document.getElementById('rsvp-trigger');
+      if (!img) return;
+
+      // Paths relative to this HTML file — update if your directory is different.
+      const defaultSrc = 'assets/buttons/RSVP1.PNG';
+      const hoverSrc = 'assets/buttons/RSVP2.PNG';
+
+      // Defensive: ensure the images exist in your assets folder with the exact filenames/case.
+      img.src = defaultSrc;
+      img.alt = 'RSVP';
+      img.setAttribute('aria-label', 'RSVP');
+
+      // Swap on pointerenter/pointerleave and keyboard focus/blur for accessibility
+      img.addEventListener('pointerenter', () => { img.src = hoverSrc; });
+      img.addEventListener('pointerleave', () => { img.src = defaultSrc; });
+
+      img.addEventListener('focus', () => { img.src = hoverSrc; }, true);
+      img.addEventListener('blur', () => { img.src = defaultSrc; }, true);
+
+      // For older devices/browsers that fire mouseover/mouseout instead of pointer events:
+      img.addEventListener('mouseover', () => { img.src = hoverSrc; });
+      img.addEventListener('mouseout', () => { img.src = defaultSrc; });
+
+      // Touch devices: do not change on touchstart (touch users expect tap). If you want a tap preview,
+      // uncomment the lines below to temporarily show hover image on touchstart and revert on touchend.
+      // img.addEventListener('touchstart', () => { img.src = hoverSrc; });
+      // img.addEventListener('touchend', () => { setTimeout(() => img.src = defaultSrc, 200); });
+
+      // Ensure that if rsvp-overlay.js binds click handlers to this element, changing src/alt won't interfere.
+      // We preserved the id and left other attributes intact.
+    })();
+  </script>
+
+  <!-- Keep the RSVP overlay loader script (relative path). Make sure rsvp-overlay.js remains in the same directory as this file. -->
+  <script src="rsvp-overlay.js"></script>
+</body>
+</html>
