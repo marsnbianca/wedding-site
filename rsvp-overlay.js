@@ -17,20 +17,20 @@
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:1rem; box-sizing:border-box; }",
 
-      /* Modal sizing using relative units */
-      ".rsvp-modal-card{ position:relative; width:100%; max-width:96vw; background:#fff; border-radius:0.75rem; overflow:visible;",
-      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease; padding:0; }",
+      /* Modal card: responsive padding and controlled max-width using relative units */
+      ".rsvp-modal-card{ position:relative; width:100%; max-width:96vw; box-sizing:border-box; background:#fff; border-radius:0.75rem; overflow:visible;",
+      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
 
-      /* Mobile (<=640px): ~80-90% width, but keep a sensible max to avoid ultra wide on large phones */
-      "@media (max-width:640px){ .rsvp-modal-card{ max-width:90vw; } }",
+      /* Mobile: ~80-90% width */
+      "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(90vw, 22.5rem); } }",
 
-      /* Tablet (641 - 1007px): ~60-80% */
+      /* Tablet: ~60-80% */
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:76vw; } }",
 
-      /* Desktop (>=1008px): ~50-70% */
-      "@media (min-width:1008px){ .rsvp-modal-card{ max-width:60vw; } }",
+      /* Desktop: ~50-70% but cap at a reasonable max (use relative units with a cap) */
+      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: clamp(31.25rem, 60vw, 50rem); } }",
 
-      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }",
+      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box; }",
 
       ".rsvp-modal-close{ position:absolute; right:0.6rem; top:0.6rem; z-index:10; background:rgba(255,255,255,0.95); border:0;",
       " width:2.25rem; height:2.25rem; border-radius:0.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center;",
@@ -57,25 +57,29 @@
   function breakpointMaxHeight() {
     var w = window.innerWidth || document.documentElement.clientWidth;
     if (w >= 1008) {
-      // Desktop: up to ~65vh (use vh)
+      // Desktop: up to ~65vh
       return Math.round(window.innerHeight * 0.65);
     }
     if (w >= 641) {
       // Tablet: up to ~55vh
       return Math.round(window.innerHeight * 0.55);
     }
-    // Mobile: fit within ~75vh
+    // Mobile: up to ~75vh
     return Math.round(window.innerHeight * 0.75);
   }
 
-  // Set iframe height from child-reported height but cap by breakpoint (use vh based cap)
+  // Set iframe height from child-reported height but cap by breakpoint (vh-based cap).
+  // Use a relative min too (25vh).
   function setHeights(childHeight) {
     if (!iframe || !card) return;
     var maxH = breakpointMaxHeight();
+    var minH = Math.round(window.innerHeight * 0.25); // 25vh minimum
     var h = parseInt(childHeight, 10) || 0;
-    // clamp: min sensible 220, max = maxH
-    var finalH = Math.min(Math.max(h, Math.round(window.innerHeight * 0.25)), maxH);
+    // clamp reported height between minH and maxH
+    var finalH = Math.min(Math.max(h, minH), maxH);
     iframe.style.height = finalH + 'px';
+    // also enforce a max-height style so CSS aware tools see it
+    iframe.style.maxHeight = maxH + 'px';
     card.style.height = 'auto';
   }
 
@@ -112,8 +116,11 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // initial, modest height until child posts size
-    iframe.style.height = Math.round(window.innerHeight * 0.4) + 'px';
+    // initial, modest height until child posts size (use a relative fraction of viewport)
+    iframe.style.height = Math.round(window.innerHeight * 0.38) + 'px';
+    // ensure iframe will not overflow parent visually; actual cap applied when child reports
+    iframe.style.maxHeight = Math.round(window.innerHeight * 0.65) + 'px';
+    iframe.style.boxSizing = 'border-box';
 
     card.appendChild(iframe);
     host.appendChild(card);
@@ -207,5 +214,5 @@
 
   window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
 
-  console.log('rsvp-overlay: responsive modal initialized (relative units)');
+  console.log('rsvp-overlay: responsive modal initialized (relative units + padding + caps)');
 })();
