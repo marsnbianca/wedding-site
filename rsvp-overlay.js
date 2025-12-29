@@ -18,18 +18,12 @@
     style.textContent = [
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:18px; box-sizing:border-box; }",
-
-      // Desktop default width, tablet narrower, mobile near-full
-      ".rsvp-modal-card{ position:relative; width:100%; max-width:880px; background:#fff; border-radius:14px; overflow:visible;",
+      ".rsvp-modal-card{ position:relative; width:100%; max-width:820px; background:#fff; border-radius:14px; overflow:visible;",
       " box-shadow:0 18px 50px rgba(0,0,0,0.32); max-height:90vh; transition:transform .18s ease,opacity .12s ease; padding:0; }",
-
       "@media (max-width:1100px){ .rsvp-modal-card{ max-width:760px; } }",
       "@media (max-width:820px){ .rsvp-modal-card{ max-width:640px; } }",
       "@media (max-width:640px){ #rsvpHostOverlay{ padding:12px; } .rsvp-modal-card{ max-width:96%; border-radius:12px; } }",
-
-      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }",
-      ".rsvp-modal-close{ position:absolute; right:10px; top:10px; z-index:10; background:rgba(255,255,255,0.95); border:0; width:36px; height:36px;",
-      " border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.12); }"
+      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }"
     ].join('');
     document.head.appendChild(style);
   }
@@ -53,7 +47,7 @@
     if (!iframe || !card) return;
     var viewportMax = Math.floor(window.innerHeight * 0.9);
     var h = parseInt(childHeight, 10) || 0;
-    var finalH = Math.min(Math.max(h, 300), viewportMax); // min sensible height 300, max 90vh
+    var finalH = Math.min(Math.max(h, 300), viewportMax); // clamp min 300px, max 90vh
     iframe.style.height = finalH + 'px';
     card.style.height = 'auto';
   }
@@ -75,14 +69,6 @@
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-modal', 'true');
 
-    // Close (X) button
-    var closeBtn = document.createElement('button');
-    closeBtn.className = 'rsvp-modal-close';
-    closeBtn.setAttribute('aria-label', 'Close RSVP');
-    closeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    closeBtn.addEventListener('click', closeRSVP);
-    card.appendChild(closeBtn);
-
     iframe = document.createElement('iframe');
     iframe.className = 'rsvp-modal-iframe';
     iframe.setAttribute('title', 'RSVP');
@@ -90,18 +76,19 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // initial reasonable height while content loads
+    // reasonable initial height while page loads
     iframe.style.height = Math.min(Math.floor(window.innerHeight * 0.75), 700) + 'px';
 
     card.appendChild(iframe);
     host.appendChild(card);
 
+    // backdrop click closes modal (not clicks inside card)
     hostClickHandler = function onHostClick(ev) {
       if (ev.target === host) closeRSVP();
     };
     host.addEventListener('click', hostClickHandler);
 
-    // on load, attempt same-origin read and ask child to send height
+    // on load try same-origin read and request child height
     iframe.addEventListener('load', function () {
       try {
         var doc = iframe.contentDocument || iframe.contentWindow.document;
@@ -167,21 +154,11 @@
         if (data.height) setHeights(data.height);
         return;
       }
-      if (data.type === 'RSVP:LOCKED') {
-        // hide top X buttons
-        var btns = document.querySelectorAll('.rsvp-modal-close');
-        btns.forEach(function (b) { b.style.display = 'none'; });
-        return;
-      }
-      if (data.type === 'RSVP:UNLOCKED') {
-        var btns2 = document.querySelectorAll('.rsvp-modal-close');
-        btns2.forEach(function (b) { b.style.display = ''; });
-        return;
-      }
       if (data.type === 'RSVP:CLOSE') {
         closeRSVP();
         return;
       }
+      // RSVP:LOCKED / UNLOCKED are ignored since there is no top X anymore
     }
 
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
