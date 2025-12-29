@@ -1,7 +1,7 @@
 // rsvp-overlay.js — place this file in the same folder as index.html in the wedding-site repo
 (function () {
   // Replace with your Apps Script web app exec URL if you ever redeploy; this should be the exec URL.
-  var RSVP_URL = "https://script.google.com/macros/s/AKfycbzdV48pD-cQn5O_lNhnqh1ijjaTbyMG0IIAu2HAWLe2BXxBAWfpTl2Evc1w2S6uX3VP/exec";
+  var RSVP_URL = "https://script.google.com/macros/s/AKfycbzm-AH9XuSlDxmIpnwfJTG0_qXA0GKNcHkBtlEasO2u51JWtwjGQQBfK5zwSH6MxXSb/exec";
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
   if (!RSVP_URL || RSVP_URL.indexOf("script.google.com") === -1) {
