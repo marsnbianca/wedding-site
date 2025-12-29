@@ -14,6 +14,7 @@ body {
   color: var(--text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
+  /* body background darker deep-blue for parts below hero */
   background: linear-gradient(135deg, #071428 0%, #0e2a44 60%, #123c57 100%);
   overflow-x: hidden;
 }
@@ -30,6 +31,12 @@ body {
   align-items: center;
   justify-content: center;
   pointer-events: auto;
+  isolation: isolate;
+}
+
+/* HERO: lighter sky background for first panel */
+.parallax-section.hero {
+  background: linear-gradient(180deg, #dff6ff 0%, #bfe9ff 45%, rgba(255,255,255,0) 100%);
 }
 
 /* Layers */
@@ -46,13 +53,25 @@ body {
   will-change: transform;
   backface-visibility: hidden;
   z-index: 0;
+  pointer-events: none;
 }
+
+/* cloud layer specific tuning */
+.cloud-layer {
+  background-size: auto 60%; /* allow clouds to be naturally sized — will scale with viewport */
+  opacity: 0.95;
+  z-index: 1;
+  mix-blend-mode: normal;
+}
+
+/* overlay */
 .parallax-layer--overlay{
   mix-blend-mode: overlay;
   opacity: 0.85;
+  z-index: 2;
 }
 
-/* Content — center everything and stack vertically */
+/* content — center everything and stack vertically */
 .section-content{
   position: relative;
   z-index: 10;
@@ -62,7 +81,6 @@ body {
   max-width: calc(var(--max-width) - 2rem);
   padding: 2rem;
 
-  /* center children (buttons, headings, etc.) */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -70,16 +88,10 @@ body {
 }
 
 /* Typography */
-.hero h1{ margin: 0 0 .5rem 0; font-size: clamp(2rem, 5vw, 4rem); }
-.hero p.lead, .section-content .lead{ margin: 0 0 1rem 0; font-size: clamp(1rem, 1.6vw, 1.25rem); color: #f6eef8; }
+.hero h1{ margin: 0 0 .5rem 0; font-size: clamp(2rem, 5vw, 4rem); color: #023e6b; text-shadow: none; }
+.hero p.lead, .section-content .lead{ margin: 0 0 1rem 0; font-size: clamp(1rem, 1.6vw, 1.25rem); color: #034b73; }
 
-/* image buttons (RSVP, MAP, etc.)
-   Use a height constraint in relative units (clamp) so buttons keep a consistent visible size
-   but remain responsive. This replaces fixed px sizes that caused oversized images.
-   - min: 3.5rem (~56px)
-   - preferred: 8vh (responsive to viewport height)
-   - max: 5rem (80px) -- matches previous 80px max
-*/
+/* image buttons (RSVP, MAP, etc.) */
 .image-button {
   display: inline-block;
   margin: 0.5rem auto;
@@ -89,10 +101,10 @@ body {
   outline: none;
   -webkit-tap-highlight-color: transparent;
 
-  width: auto;                          /* preserve aspect ratio */
-  height: clamp(3.5rem, 8vh, 5rem);     /* responsive, caps at ~80px */
-  object-fit: contain;                  /* ensure image fits the box */
-  max-width: 90%;                       /* prevent extreme wide scaling on tiny images */
+  width: auto;
+  height: clamp(3.5rem, 8vh, 5rem);
+  object-fit: contain;
+  max-width: 90%;
 }
 
 /* Focus styles for keyboard users */
@@ -117,15 +129,14 @@ body {
   .parallax-layer{ width: 220%; left: 50%; transform: translateX(-50%); }
   .parallax-section{ min-height: 420px; }
   .section-content{ padding: 1rem; }
-  .content { color: #111; } /* keep body text readable on small where panels are smaller */
+  .content { color: #111; }
 
-  /* slightly reduce button height on medium screens */
   .image-button { height: clamp(3rem, 9vh, 4.5rem); }
 }
 
 /* very small screens */
 @media (max-width: 480px) {
-  .image-button { height: clamp(2.6rem, 10vh, 4rem); } /* min ~42px, preferred 10vh, max 64px */
+  .image-button { height: clamp(2.6rem, 10vh, 4rem); }
 }
 
 /* Respect prefers-reduced-motion */
