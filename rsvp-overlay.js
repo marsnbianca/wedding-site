@@ -16,12 +16,18 @@
     style.textContent = [
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:18px; box-sizing:border-box; }",
-      ".rsvp-modal-card{ position:relative; width:100%; max-width:820px; background:#fff; border-radius:14px; overflow:visible;",
+
+      /* Modal sizing per requested breakpoints (relative units) */
+      ".rsvp-modal-card{ position:relative; width:100%; max-width:96vw; background:#fff; border-radius:14px; overflow:visible;",
       " box-shadow:0 18px 50px rgba(0,0,0,0.32); transition:transform .18s ease,opacity .12s ease; padding:0; }",
-      "@media (max-width:1200px){ .rsvp-modal-card{ max-width:760px; } }",
-      "@media (max-width:900px){ .rsvp-modal-card{ max-width:640px; } }",
-      "@media (max-width:600px){ #rsvpHostOverlay{ padding:12px; } .rsvp-modal-card{ max-width:96%; border-radius:12px; } }",
+
+      /* Tablet */
+      "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:80vw; } }",
+      /* Desktop */
+      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(900px, 70vw); } }",
+
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }",
+
       ".rsvp-modal-close{ position:absolute; right:10px; top:10px; z-index:10; background:rgba(255,255,255,0.95); border:0; width:36px; height:36px;",
       " border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.12); }"
     ].join('');
@@ -42,19 +48,21 @@
     }
   }
 
+  // Breakpoint max heights (relative)
   function breakpointMaxHeight() {
     var w = window.innerWidth || document.documentElement.clientWidth;
-    if (w >= 1200) return 720;
-    if (w >= 900) return 640;
-    if (w >= 600) return 560;
-    return Math.floor(window.innerHeight * 0.8);
+    if (w >= 1008) return Math.round(Math.min(window.innerHeight * 0.65, 650)); // desktop cap ~65vh or 650px
+    if (w >= 641) return Math.round(Math.min(window.innerHeight * 0.9, window.innerHeight)); // tablet up to 90vh
+    // mobile
+    return Math.floor(window.innerHeight * 1.0); // allow up to full screen height
   }
 
+  // set iframe height based on child reported height, cap by breakpoint
   function setHeights(childHeight) {
     if (!iframe || !card) return;
     var maxH = breakpointMaxHeight();
     var h = parseInt(childHeight, 10) || 0;
-    var finalH = Math.min(Math.max(h, 300), maxH);
+    var finalH = Math.min(Math.max(h, 220), maxH); // sensible min 220
     iframe.style.height = finalH + 'px';
     card.style.height = 'auto';
   }
@@ -95,7 +103,8 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    iframe.style.height = Math.min(breakpointMaxHeight(), 700) + 'px';
+    // initial height: small sensible height until child reports actual height
+    iframe.style.height = Math.min(breakpointMaxHeight(), 520) + 'px';
 
     card.appendChild(iframe);
     host.appendChild(card);
@@ -112,7 +121,7 @@
           var h = Math.max(doc.documentElement.scrollHeight || 0, (doc.body && doc.body.scrollHeight) || 0);
           if (h) setHeights(h);
         }
-      } catch (err) {}
+      } catch (err) { /* cross-origin possible */ }
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
     });
 
@@ -141,6 +150,7 @@
     topCloseBtn.style.display = visible ? '' : 'none';
   }
 
+  // Delegated click open
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
@@ -156,6 +166,7 @@
     } catch (_) {}
   }, true);
 
+  // Messages from iframe
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
@@ -178,14 +189,20 @@
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
+  // ESC closes overlay
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
+  // create top close and show by default
   createTopClose();
   setTopCloseVisible(true);
 
-  window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
+  window.__rsvp = {
+    open: openRSVP,
+    close: closeRSVP,
+    info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
+  };
 
   console.log('rsvp-overlay: responsive modal initialized (auto-size + top X)');
 })();
