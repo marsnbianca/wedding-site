@@ -1,67 +1,112 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mars & Bianca — Wedding</title>
-  <style>
-    /* minimal demo styles */
-    :root{
-      --max-width: 980px;
-      --space: 1.25rem;
-    }
-    html,body{height:100%}
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      color: #111;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      background: linear-gradient(135deg,#f7e7f2 0%,#fff 100%);
-    }
-    .container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
-    header { height: 60vh; display:flex; align-items:center; justify-content:center; }
-    .hero { text-align:center; }
-    h1 { margin: 0 0 .25rem 0; font-size: clamp(1.6rem, 4vw, 2.6rem); }
-    p.lead { margin: 0 0 1rem 0; color:#444; }
-    .rsvp-btn { display:inline-block; cursor:pointer; border:0; background:transparent; }
-    .content { padding: 1.25rem 0; }
-    footer { padding: 1.25rem 0; font-size: .9rem; color:#666; text-align:center; }
-    /* overlay host gets injected by rsvp-overlay.js */
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <div class="hero">
-        <h1>Mars & Bianca</h1>
-        <p class="lead">We're getting married — join us</p>
+:root{
+  --hero-height: 72vh;
+  --max-width: 1200px;
+  --accent: #b86b9d;
+  --text: #222;
+}
 
-        <!-- RSVP trigger image — ensure path is correct in your repo -->
-        <img
-          src="assets/buttons/RSVP-1.png"
-          alt="openRSVP"
-          aria-label="openRSVP"
-          title="openRSVP"
-          class="rsvp-btn"
-          width="120"
-          height="80"
-          style="display:block; margin: 1rem auto;"
-        />
-      </div>
-    </header>
+/* Basic layout */
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color:var(--text);
+  background:#fff;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
 
-    <main class="content">
-      <h2>Details</h2>
-      <p>Parallax, animations and more go here — build your pages however you like.</p>
-    </main>
+/* HERO */
+.hero{
+  position:relative;
+  height:var(--hero-height);
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 
-    <footer>
-      <small>© Mars & Bianca</small>
-    </footer>
-  </div>
+/* Parallax stacking context */
+.parallax{
+  position:relative;
+  width:100%;
+  height:100%;
+  overflow:visible;
+  pointer-events:none; /* content should be interacted with via hero__content */
+}
 
-  <!-- Overlay loader script (relative path). Make sure rsvp-overlay.js is in same directory as this file. -->
-  <script src="rsvp-overlay.js"></script>
-</body>
-</html>
+/* Generic layer styles — use background images or SVGs */
+.parallax__layer{
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%) translateY(0);
+  top:0;
+  width:130%;
+  height:120%;
+  will-change:transform;
+  backface-visibility:hidden;
+  background-repeat:no-repeat;
+  background-position:center top;
+  background-size:cover;
+}
+
+/* Replace these with your real images or inline SVGs */
+.parallax__layer--bg{
+  z-index:0;
+  background-image:linear-gradient(180deg, #f7eef6 0%, #efe0ef 100%);
+  opacity:1;
+}
+.parallax__layer--mid{
+  z-index:1;
+  background-image:radial-gradient(circle at 25% 25%, rgba(184,107,157,0.15), transparent 20%),
+                    radial-gradient(circle at 75% 75%, rgba(50,150,125,0.08), transparent 18%);
+  mix-blend-mode:overlay;
+}
+.parallax__layer--front{
+  z-index:2;
+  background-image:url('https://images.unsplash.com/photo-1503264116251-35a269479413?q=80&w=1400&auto=format&fit=crop&ixlib=rb-4.0.3&s='); /* placeholder */
+  background-size:cover;
+  opacity:0.9;
+  filter:contrast(1.02) saturate(1.05);
+}
+
+/* Foreground content */
+.hero__content{
+  position:relative;
+  z-index:10;
+  pointer-events:auto;
+  text-align:center;
+  max-width:var(--max-width);
+  margin:0 auto;
+  padding:2rem;
+  color:#fff;
+  text-shadow:0 6px 18px rgba(0,0,0,0.4);
+}
+.hero__content h1{
+  margin:0 0 .5rem 0;
+  font-size:clamp(2rem, 4.5vw, 4rem);
+  letter-spacing:0.01em;
+}
+.hero__content p{ margin:0 0 1rem 0; font-size:clamp(1rem, 1.6vw, 1.25rem) }
+.cta{
+  display:inline-block;
+  padding:.6rem 1.1rem;
+  background:var(--accent);
+  color:white;
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:600;
+}
+
+/* Simple content area below */
+.content{ padding:3rem 1rem; max-width:var(--max-width); margin:0 auto; }
+
+/* Responsive: simpler effect on small screens */
+@media (max-width:900px){
+  .parallax__layer{ width:200%; left:50%; transform:translateX(-50%); }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .parallax__layer { transition:none !important; }
+}
