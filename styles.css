@@ -39,7 +39,7 @@ body {
   isolation: isolate;
 }
 
-/* ---------- Ombré sky gradients for panels ---------- */
+/* Ombré sky gradients */
 .panel-clouds {
   background: linear-gradient(180deg,
     #e6f9ff 0%,
@@ -63,9 +63,7 @@ body {
     #f7fbff 100%);
 }
 
-/* Parallax layers (clouds and other decorative layers)
-   Note: cloud-layer elements are sized & positioned by JS based on data attributes.
-*/
+/* Parallax layers (we position cloud-layer via JS) */
 .parallax-layer{
   position: absolute;
   top: 0;
@@ -80,16 +78,14 @@ body {
   pointer-events: none;
 }
 
-/* Cloud layers - JS will set width/height/left/top/z-index for each cloud.
-   Use a sane default for very short/no-js scenarios.
-*/
+/* Cloud layers: default visual rules (JS controls width/height, left/top) */
 .cloud-layer {
-  background-size: contain;
+  background-size: 100% 100%;
   opacity: 0.98;
   mix-blend-mode: normal;
 }
 
-/* overlay style for depth */
+/* overlay */
 .parallax-layer--overlay{
   mix-blend-mode: overlay;
   opacity: 0.28;
@@ -138,7 +134,7 @@ body {
   max-width: 90%;
 }
 
-/* Focus styles for keyboard users */
+/* Focus styles */
 .image-button:focus {
   box-shadow: 0 0 0 4px rgba(184,107,157,0.18);
   border-radius: 6px;
@@ -154,24 +150,26 @@ body {
 footer small { color: #bfcbd6; }
 
 /* Responsive adjustments */
+@media (min-width: 1200px) {
+  /* Desktop: make clouds bigger visually via sizes chosen in JS (handled there) */
+}
+
 @media (max-width: 900px) {
   :root { --panel-height: 70vh; }
-  .parallax-layer{ width: auto; left: 0; top: 0; transform: translate3d(0,0,0); }
-
-  /* clouds slightly larger on smaller screens for visibility */
-  .cloud-layer { background-size: contain; }
-
+  .parallax-section{ min-height: 420px; }
   .section-content { padding: 1rem; }
   .image-button { height: clamp(3rem, 9vh, 4.5rem); }
+
+  /* on tablet, ensure cloud elements remain positioned by JS (no wrapper color) */
+  .parallax-layer { background-size: 100% 100%; }
 }
 
 @media (max-width: 480px) {
   :root { --panel-height: 60vh; }
-
   .image-button { height: clamp(2.6rem, 10vh, 4rem); }
 }
 
-/* Respect prefers-reduced-motion: reduce heavy motion */
+/* Reduce motion fallback */
 @media (prefers-reduced-motion: reduce) {
-  .parallax-layer { transition: none !important; will-change: auto !important; transform: none !important; background-position: center 50% !important; }
+  .parallax-layer { transition: none !important; transform: none !important; background-position: center 50% !important; }
 }
