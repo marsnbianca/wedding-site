@@ -24,12 +24,12 @@
       ".rsvp-modal-card{ position:relative; width:auto; max-width:96vw; box-sizing:border-box; background:#fff; border-radius:0.75rem; overflow:visible;",
       " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease, width .18s ease, padding .18s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
 
-      /* Mobile */
-      "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(94vw, 24rem); } }",
+      /* Mobile: slightly wider allowed */
+      "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(96vw, 26rem); } }",
       /* Tablet */
-      "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:80vw; } }",
-      /* Desktop: increased to 60vw cap (user requested larger modal) and cap at 60rem */
-      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(60vw, 60rem); } }",
+      "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:82vw; } }",
+      /* Desktop: increase to 70vw max and cap at 70rem (wider modal per request) */
+      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(70vw, 70rem); min-width: 36rem; } }",
 
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box; }",
 
@@ -55,20 +55,24 @@
     }
   }
 
-  // Breakpoint-based caps (px)
+  // Breakpoint-based caps (px) — increased mobile max height and desktop width cap
   function breakpointCaps() {
     var w = window.innerWidth || document.documentElement.clientWidth;
     var vh = window.innerHeight || document.documentElement.clientHeight;
     var caps = {};
     if (w >= 1008) {
-      caps.maxHeightPx = Math.min(650, Math.round(vh * 0.65)); // keep your recommended desktop cap
-      caps.widthCap = Math.min(Math.round(w * 0.6), 60 * parseFloat(getComputedStyle(document.documentElement).fontSize)); // 60vw capped by 60rem
+      // Desktop: cap height around 65vh but no more than 650px (unchanged)
+      caps.maxHeightPx = Math.min(650, Math.round(vh * 0.65));
+      // widen desktop cap to 70vw capped at 70rem
+      caps.widthCap = Math.min(Math.round(w * 0.7), 70 * parseFloat(getComputedStyle(document.documentElement).fontSize));
     } else if (w >= 641) {
-      caps.maxHeightPx = Math.round(vh * 0.55);
-      caps.widthCap = Math.round(w * 0.80);
+      // Tablet: slightly wider
+      caps.maxHeightPx = Math.round(vh * 0.60);
+      caps.widthCap = Math.round(w * 0.82);
     } else {
-      caps.maxHeightPx = Math.round(vh * 0.75);
-      caps.widthCap = Math.round(w * 0.94);
+      // Mobile: increase max height to nearly full viewport (allow up to 95vh)
+      caps.maxHeightPx = Math.round(vh * 0.95);
+      caps.widthCap = Math.round(w * 0.96);
     }
     caps.vh = vh;
     caps.vw = w;
@@ -151,11 +155,11 @@
     iframe.style.height = finalH + 'px';
     iframe.style.maxHeight = maxH + 'px';
 
-    // width: use a comfortable vw (increased from 50 to 60 on desktop)
+    // width: larger on desktop/tablet/mobile (now wider by default)
     var finalVw;
-    if (vw >= 1008) finalVw = 60;
-    else if (vw >= 641) finalVw = 80;
-    else finalVw = 94;
+    if (vw >= 1008) finalVw = 70;   // desktop target 70vw (CSS also caps at 70rem)
+    else if (vw >= 641) finalVw = 82;
+    else finalVw = 96;
     card.style.width = finalVw + 'vw';
 
     // padding
@@ -204,8 +208,8 @@
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
     // initial modest height until child sends step
-    iframe.style.height = Math.round(window.innerHeight * 0.36) + 'px';
-    iframe.style.maxHeight = Math.round(window.innerHeight * 0.75) + 'px';
+    iframe.style.height = Math.round(window.innerHeight * 0.38) + 'px';
+    iframe.style.maxHeight = Math.round(window.innerHeight * 0.95) + 'px';
     iframe.style.boxSizing = 'border-box';
 
     card.appendChild(iframe);
@@ -247,10 +251,8 @@
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
-      // check for any element that should open the RSVP: image/button with alt/title/aria-label "openRSVP", [data-rsvp="open"], or with class "rsvp-btn"
       var opener = t.closest && (t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"], [data-rsvp="open"], .rsvp-btn') );
       if (opener) { openRSVP(e); return; }
-      // also allow clicking text "RSVP"
       var el = t.closest && t.closest("a, button, div, span");
       if (el) {
         var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
@@ -305,5 +307,5 @@
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: initialized (step-driven sizing, desktop 60vw cap)');
+  console.log('rsvp-overlay: initialized (step-driven sizing, desktop 70vw cap; mobile 95vh max)');
 })();
