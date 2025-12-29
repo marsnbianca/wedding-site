@@ -1,9 +1,9 @@
 // rsvp-overlay.js — responsive modal overlay for wedding-site (parent)
 // Path: wedding-site/rsvp-overlay.js
-// Include it from your wedding-site index.html: <script src="rsvp-overlay.js"></script>
+// Include from your wedding-site index.html: <script src="rsvp-overlay.js"></script>
 
 (function () {
-  // CONFIG: set to your GitHub Pages front-end URL (the RSVP page you published)
+  // CONFIG: set this to your GitHub Pages front-end URL (the RSVP page you published)
   var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- REPLACE with your frontend Pages URL
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
@@ -18,12 +18,18 @@
     style.textContent = [
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:18px; box-sizing:border-box; }",
-      ".rsvp-modal-card{ position:relative; width:100%; max-width:820px; background:#fff; border-radius:14px; overflow:visible;",
+
+      // Desktop default width, tablet narrower, mobile near-full
+      ".rsvp-modal-card{ position:relative; width:100%; max-width:880px; background:#fff; border-radius:14px; overflow:visible;",
       " box-shadow:0 18px 50px rgba(0,0,0,0.32); max-height:90vh; transition:transform .18s ease,opacity .12s ease; padding:0; }",
-      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; overflow:auto; }",
+
+      "@media (max-width:1100px){ .rsvp-modal-card{ max-width:760px; } }",
+      "@media (max-width:820px){ .rsvp-modal-card{ max-width:640px; } }",
+      "@media (max-width:640px){ #rsvpHostOverlay{ padding:12px; } .rsvp-modal-card{ max-width:96%; border-radius:12px; } }",
+
+      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }",
       ".rsvp-modal-close{ position:absolute; right:10px; top:10px; z-index:10; background:rgba(255,255,255,0.95); border:0; width:36px; height:36px;",
-      " border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.12); }",
-      "@media (max-width:900px){ #rsvpHostOverlay{ padding:12px; } .rsvp-modal-card{ max-width:92%; border-radius:12px; } }"
+      " border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.12); }"
     ].join('');
     document.head.appendChild(style);
   }
@@ -42,18 +48,13 @@
     }
   }
 
-  // Set iframe height to child content height, but cap at 90vh
+  // Set iframe height to child content height, capped by 90vh
   function setHeights(childHeight) {
     if (!iframe || !card) return;
     var viewportMax = Math.floor(window.innerHeight * 0.9);
     var h = parseInt(childHeight, 10) || 0;
-    if (isNaN(h) || h <= 0) {
-      iframe.style.height = Math.min(viewportMax, 560) + 'px';
-      return;
-    }
-    var finalH = Math.min(h, viewportMax);
+    var finalH = Math.min(Math.max(h, 300), viewportMax); // min sensible height 300, max 90vh
     iframe.style.height = finalH + 'px';
-    // ensure card doesn't produce an extra scrollbar: card overflow visible so iframe handles scroll
     card.style.height = 'auto';
   }
 
@@ -74,7 +75,7 @@
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-modal', 'true');
 
-    // Close button
+    // Close (X) button
     var closeBtn = document.createElement('button');
     closeBtn.className = 'rsvp-modal-close';
     closeBtn.setAttribute('aria-label', 'Close RSVP');
@@ -89,19 +90,18 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // initial height while content loads
-    iframe.style.height = Math.min(Math.floor(window.innerHeight * 0.8), 700) + 'px';
+    // initial reasonable height while content loads
+    iframe.style.height = Math.min(Math.floor(window.innerHeight * 0.75), 700) + 'px';
 
     card.appendChild(iframe);
     host.appendChild(card);
 
-    // backdrop click closes modal (not clicks inside card)
     hostClickHandler = function onHostClick(ev) {
       if (ev.target === host) closeRSVP();
     };
     host.addEventListener('click', hostClickHandler);
 
-    // try same-origin read on load, and request child height
+    // on load, attempt same-origin read and ask child to send height
     iframe.addEventListener('load', function () {
       try {
         var doc = iframe.contentDocument || iframe.contentWindow.document;
@@ -135,7 +135,7 @@
     console.log('rsvp-overlay: closed');
   }
 
-  // Delegated click open
+  // Delegated click to open overlay
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
@@ -168,13 +168,14 @@
         return;
       }
       if (data.type === 'RSVP:LOCKED') {
+        // hide top X buttons
         var btns = document.querySelectorAll('.rsvp-modal-close');
         btns.forEach(function (b) { b.style.display = 'none'; });
         return;
       }
       if (data.type === 'RSVP:UNLOCKED') {
-        var btns = document.querySelectorAll('.rsvp-modal-close');
-        btns.forEach(function (b) { b.style.display = ''; });
+        var btns2 = document.querySelectorAll('.rsvp-modal-close');
+        btns2.forEach(function (b) { b.style.display = ''; });
         return;
       }
       if (data.type === 'RSVP:CLOSE') {
@@ -191,8 +192,12 @@
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // Helpers exposed
-  window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
+  // Helper API
+  window.__rsvp = {
+    open: openRSVP,
+    close: closeRSVP,
+    info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
+  };
 
   console.log('rsvp-overlay: responsive modal initialized (auto-size)');
 })();
