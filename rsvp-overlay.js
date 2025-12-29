@@ -1,13 +1,11 @@
-// rsvp-overlay.js — modal iframe version
+// rsvp-overlay.js — modal iframe version using the inner script.googleusercontent.com URL
 (function () {
-  // IMPORTANT: Replace this with the full script.googleusercontent.com URL
-  // that you copy from the Network list when you open your Apps Script exec URL in a tab.
-  // Example: "https://script.googleusercontent.com/.....long...string..."
+  // ********** REPLACED with the inner URL you provided **********
   var RSVP_URL = "https://n-qwmf6vougjxh4aq5pssvewccq5224sxmappxwxi-0lu-script.googleusercontent.com/userCodeAppPanel";
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
   if (!RSVP_URL || RSVP_URL.indexOf("script.googleusercontent.com") === -1) {
-    console.error("rsvp-overlay.js: RSVP_URL is not set to a script.googleusercontent.com URL. Please paste the inner URL copied from DevTools.");
+    console.error("rsvp-overlay.js: RSVP_URL is not set to a script.googleusercontent.com URL.");
   }
 
   var host = document.createElement("div");
@@ -49,7 +47,6 @@
     host.style.background = "rgba(0,0,0,0.35)";
 
     iframe = document.createElement("iframe");
-    // add cache buster param
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
     iframe.style.position = "absolute";
     iframe.style.inset = "0";
@@ -90,10 +87,9 @@
     }
   }, true);
 
-  // close when iframe posts "RSVP:CLOSE"
   window.addEventListener("message", function (e) {
     if (!e) return;
-    // accept messages from script.googleusercontent.com (inner UI) too
+    // accept messages from your origin and from Google usercontent/script domains
     if (e.origin !== RSVP_ORIGIN && !e.origin.startsWith("https://script.googleusercontent.com") && !e.origin.startsWith("https://script.google.com")) {
       console.warn("rsvp-overlay: ignoring message from origin", e.origin);
       return;
@@ -105,7 +101,6 @@
     if (e && e.key === "Escape" && host.style.display === "block") closeRSVP();
   });
 
-  // debug helpers
   window.__rsvp = {
     open: function () { openRSVP(); },
     close: function () { closeRSVP(); },
