@@ -6,6 +6,7 @@
   --panel-height: 100vh; /* default panel height */
 }
 
+/* Base */
 html,body{height:100%}
 body {
   margin: 0;
@@ -13,14 +14,13 @@ body {
   color: var(--text);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  /* charcoal / deep-blue background as requested */
   background: linear-gradient(135deg, #071428 0%, #0e2a44 60%, #123c57 100%);
   overflow-x: hidden;
 }
 
 .container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
 
-/* ---- PARALLAX SECTIONS ---- */
+/* Panels */
 .parallax-section{
   position: relative;
   height: var(--panel-height);
@@ -32,7 +32,7 @@ body {
   pointer-events: auto;
 }
 
-/* stacking and visual layers */
+/* Layers */
 .parallax-layer{
   position: absolute;
   top: 0;
@@ -52,7 +52,7 @@ body {
   opacity: 0.85;
 }
 
-/* content above layers */
+/* Content — center everything and stack vertically */
 .section-content{
   position: relative;
   z-index: 10;
@@ -61,35 +61,36 @@ body {
   text-shadow: 0 6px 18px rgba(0,0,0,0.35);
   max-width: calc(var(--max-width) - 2rem);
   padding: 2rem;
+
+  /* center children (buttons, headings, etc.) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
-/* Example typographic scale for each panel */
+/* Typography */
 .hero h1{ margin: 0 0 .5rem 0; font-size: clamp(2rem, 5vw, 4rem); }
-.hero p.lead{ margin: 0 0 1rem 0; font-size: clamp(1rem, 1.6vw, 1.25rem); color: #f6eef8; }
-.cta {
-  display:inline-block;
-  padding:.6rem 1.1rem;
-  background:var(--accent);
-  color:white;
-  border-radius:999px;
-  text-decoration:none;
-  font-weight:600;
-  box-shadow: 0 6px 18px rgba(184,107,157,0.18);
-}
+.hero p.lead, .section-content .lead{ margin: 0 0 1rem 0; font-size: clamp(1rem, 1.6vw, 1.25rem); color: #f6eef8; }
 
-/* RSVP image button */
-.rsvp-btn {
-  display:block;
-  margin: 1rem auto;
-  width: 120px;
-  height: 80px;
+/* image buttons (RSVP, MAP, etc.) */
+.image-button {
+  display: block;
+  margin: 0.5rem auto;
   cursor: pointer;
   border: 0;
   background: transparent;
   outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* subtle separators for content sections that follow */
+/* focus styles for keyboard users */
+.image-button:focus {
+  box-shadow: 0 0 0 4px rgba(184,107,157,0.18);
+  border-radius: 6px;
+}
+
+/* fallback content area below panels */
 .content{
   padding: 3rem 1rem;
   max-width: var(--max-width);
@@ -106,6 +107,10 @@ body {
   .parallax-section{ min-height: 420px; }
   .section-content{ padding: 1rem; }
   .content { color: #111; } /* keep body text readable on small where panels are smaller */
+
+  /* ensure image buttons scale down */
+  .image-button { width: 110px; height: auto; }
+  #map-trigger { width: 120px; }
 }
 
 /* Respect prefers-reduced-motion */
@@ -113,5 +118,39 @@ body {
   .parallax-layer { transition: none !important; will-change: auto !important; }
 }
 
-/* simple fallback when JS disabled: show images as backgrounds via inline styles */
-.no-js .parallax-layer { position: absolute; }
+/* Overlay / modal sizing fixes (generic selectors — target multiple possible overlay classnames)
+   These rules aim to prevent the overlay/modal from being very small on mobile.
+   If your rsvp-overlay.js injects different class names, add them here.
+*/
+.rsvp-overlay,
+.overlay,
+.overlay-host,
+.rsvp-modal,
+#rsvp-overlay,
+.modal {
+  box-sizing: border-box;
+}
+
+/* ensure overlay panel is roomy and scrollable when necessary */
+.rsvp-overlay .panel,
+.overlay .panel,
+.rsvp-modal,
+.modal,
+#rsvp-overlay {
+  min-height: 50vh;      /* not tiny on phone */
+  max-height: 95vh;      /* fit within viewport */
+  height: auto;
+  overflow: auto;
+  padding: 1rem;
+}
+
+/* slightly larger min-height on small phones */
+@media (max-width: 480px) {
+  .rsvp-overlay .panel,
+  .overlay .panel,
+  .rsvp-modal,
+  .modal,
+  #rsvp-overlay {
+    min-height: 60vh;
+  }
+}
