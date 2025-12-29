@@ -22,13 +22,13 @@
 
       /* card base: transitions for width/padding/height */
       ".rsvp-modal-card{ position:relative; width:auto; max-width:96vw; box-sizing:border-box; background:#fff; border-radius:0.75rem; overflow:visible;",
-      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease, width .18s ease, padding .18s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
+      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease, width .18s ease, padding .18s ease, height .18s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
 
       /* Mobile: slightly wider allowed */
       "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(96vw, 26rem); } }",
       /* Tablet */
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:82vw; } }",
-      /* Desktop: increase to 70vw max and cap at 70rem (wider modal per request) */
+      /* Desktop: 70vw max and cap at 70rem; min-width to avoid overly narrow */
       "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(70vw, 70rem); min-width: 36rem; } }",
 
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box; }",
@@ -41,7 +41,6 @@
   }
 
   var iframe = null, card = null, lastFocus = null, hostClickHandler = null, topCloseBtn = null;
-  var sizeRequestTimer = null;
 
   function lockScroll(lock) {
     if (lock) {
@@ -55,31 +54,41 @@
     }
   }
 
-  // Breakpoint-based caps (px) — increased mobile max height and desktop width cap
-  function breakpointCaps() {
-    var w = window.innerWidth || document.documentElement.clientWidth;
+  // Breakpoint-based caps and padding clamp ranges (returns relative caps + px fallbacks)
+  function breakpointConfig() {
+    var vw = window.innerWidth || document.documentElement.clientWidth;
     var vh = window.innerHeight || document.documentElement.clientHeight;
-    var caps = {};
-    if (w >= 1008) {
-      // Desktop: cap height around 65vh but no more than 650px (unchanged)
-      caps.maxHeightPx = Math.min(650, Math.round(vh * 0.65));
-      // widen desktop cap to 70vw capped at 70rem
-      caps.widthCap = Math.min(Math.round(w * 0.7), 70 * parseFloat(getComputedStyle(document.documentElement).fontSize));
-    } else if (w >= 641) {
-      // Tablet: slightly wider
-      caps.maxHeightPx = Math.round(vh * 0.60);
-      caps.widthCap = Math.round(w * 0.82);
+    if (vw >= 1008) {
+      // Desktop
+      return {
+        maxHeightVh: 0.65,    // 65vh cap
+        maxHeightPxCap: 650,  // don't exceed 650px
+        padMinRem: 0.8,
+        padMaxRem: 1.6,
+        widthVw: 70           // target vw used for card.style.width (CSS still caps by max-width)
+      };
+    } else if (vw >= 641) {
+      // Tablet
+      return {
+        maxHeightVh: 0.60,    // 60vh
+        maxHeightPxCap: Math.round(vh * 0.9), // large relative cap
+        padMinRem: 0.7,
+        padMaxRem: 1.2,
+        widthVw: 82
+      };
     } else {
-      // Mobile: increase max height to nearly full viewport (allow up to 95vh)
-      caps.maxHeightPx = Math.round(vh * 0.95);
-      caps.widthCap = Math.round(w * 0.96);
+      // Mobile
+      return {
+        maxHeightVh: 0.95,    // allow up to 95vh on mobile
+        maxHeightPxCap: Math.round(vh * 0.95),
+        padMinRem: 0.5,
+        padMaxRem: 1.0,
+        widthVw: 96
+      };
     }
-    caps.vh = vh;
-    caps.vw = w;
-    return caps;
   }
 
-  // Step -> target fraction of viewport height (desktop baseline)
+  // per-step desired fraction of viewport height (desktop baseline)
   const desktopStepVH = {
     search: 0.30,
     matches: 0.35,
@@ -92,37 +101,39 @@
     thanks: 0.28
   };
 
-  // per-step padding (rem)
-  function paddingForStep(stepName) {
+  // padding mapping (preferred rem) per step
+  function preferredPaddingRem(stepName) {
     const mapping = {
-      search: '0.6rem',
-      matches: '0.7rem',
-      notInList: '0.6rem',
-      attendance: '1rem',
-      transport: '0.8rem',
-      phone: '0.7rem',
-      notes: '0.7rem',
-      review: '0.8rem',
-      thanks: '0.6rem'
+      search: 0.6,
+      matches: 0.7,
+      notInList: 0.6,
+      attendance: 1.0,
+      transport: 0.8,
+      phone: 0.7,
+      notes: 0.7,
+      review: 0.8,
+      thanks: 0.6
     };
-    return mapping[stepName] || '0.8rem';
+    return mapping[stepName] || 0.8;
   }
 
-  function remToPx(remStr) {
-    if (!remStr || typeof remStr !== 'string') return 0;
-    var m = remStr.match(/^([\d.]+)rem$/);
-    if (!m) return 0;
-    var rem = parseFloat(m[1]);
-    var rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    return rem * rootFontSize;
+  // convert rem to px
+  function remToPx(rem) {
+    var rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    return rem * rootFs;
   }
 
-  // Size modal by step only (no child size reading)
+  // clamp a number between min and max
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  // compute and apply size for a given step; uses only step name and maxSeats
   function sizeForStep(stepName, maxSeats) {
     if (!iframe || !card) return;
-    var caps = breakpointCaps();
-    var vh = caps.vh, vw = caps.vw, maxH = caps.maxHeightPx;
+    var cfg = breakpointConfig();
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var vw = window.innerWidth || document.documentElement.clientWidth;
 
+    // determine base fraction
     var fraction;
     if (stepName === 'attendance') {
       fraction = (maxSeats && maxSeats > 1) ? desktopStepVH.attendance_multi : desktopStepVH.attendance_single;
@@ -130,40 +141,49 @@
       fraction = desktopStepVH[stepName] || desktopStepVH.search;
     }
 
-    // adjust fraction for tablet/mobile
+    // adjust fraction slightly by breakpoint (tablet/mobile)
     if (vw >= 1008) {
-      // desktop: keep fraction
+      // desktop: fraction as-is
     } else if (vw >= 641) {
-      fraction = Math.min(0.95, fraction * 0.95);
+      fraction = fraction * 0.95;
     } else {
-      fraction = Math.min(1.0, fraction * 1.0);
+      fraction = fraction * 1.0;
     }
 
+    // desired height (using vh)
     var desiredH = Math.round(vh * fraction);
 
-    // compute a content-based minimum using padding + base content
-    var pad = paddingForStep(stepName || '');
-    var padPx = remToPx(pad);
-    var baseContentRem = 5.5;
-    var rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    var baseContentPx = baseContentRem * rootFs;
+    // padding: take preferred rem for step, then clamp it within breakpoint's min/max
+    var prefRem = preferredPaddingRem(stepName || '');
+    var padRem = clamp(prefRem, cfg.padMinRem, cfg.padMaxRem);
+    var padPx = remToPx(padRem);
+
+    // compute minimum height based on base content + padding
+    var baseContentRem = 5.5; // approximate content height in rem
+    var baseContentPx = remToPx(baseContentRem);
     var minH = Math.round(baseContentPx + padPx * 2);
+    // also enforce a viewport-relative min (12vh) and small px floor
     minH = Math.max(minH, Math.round(vh * 0.12), 120);
 
-    // clamp to [minH, maxH]
-    var finalH = Math.min(Math.max(desiredH, minH), maxH);
+    // compute max height from config (vh cap) and absolute px cap
+    var maxH_fromVh = Math.round(vh * cfg.maxHeightVh);
+    var maxH = Math.min(maxH_fromVh, cfg.maxHeightPxCap);
+
+    // final height clamped
+    var finalH = clamp(desiredH, minH, maxH);
+
+    // apply height using px (calculated from vh/min bases) — uses relative vh in calculation
     iframe.style.height = finalH + 'px';
-    iframe.style.maxHeight = maxH + 'px';
+    // also set a CSS max-height using vh to keep it responsive to viewport changes
+    iframe.style.maxHeight = Math.round(cfg.maxHeightVh * 100) + 'vh';
 
-    // width: larger on desktop/tablet/mobile (now wider by default)
-    var finalVw;
-    if (vw >= 1008) finalVw = 70;   // desktop target 70vw (CSS also caps at 70rem)
-    else if (vw >= 641) finalVw = 82;
-    else finalVw = 96;
-    card.style.width = finalVw + 'vw';
+    // width target: use cfg.widthVw (do not override CSS max-width)
+    card.style.width = cfg.widthVw + 'vw';
 
-    // padding
-    card.style.padding = pad;
+    // apply clamped padding using rem unit (keeps relative behavior)
+    card.style.padding = padRem + 'rem';
+
+    // ensure card height auto so iframe controls internal scroll
     card.style.height = 'auto';
   }
 
@@ -208,7 +228,8 @@
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
     // initial modest height until child sends step
-    iframe.style.height = Math.round(window.innerHeight * 0.38) + 'px';
+    var initialH = Math.round(window.innerHeight * 0.38);
+    iframe.style.height = initialH + 'px';
     iframe.style.maxHeight = Math.round(window.innerHeight * 0.95) + 'px';
     iframe.style.boxSizing = 'border-box';
 
@@ -221,7 +242,7 @@
     host.addEventListener('click', hostClickHandler);
 
     iframe.addEventListener('load', function () {
-      console.debug('rsvp-overlay: iframe load event');
+      console.debug('rsvp-overlay: iframe load event — requesting step');
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) { console.debug('rsvp-overlay: REQUEST_STEP post failed', err); }
       setTimeout(function(){ try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) { console.debug('rsvp-overlay: delayed REQUEST_STEP failed', err); } }, 160);
     });
@@ -307,5 +328,5 @@
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: initialized (step-driven sizing, desktop 70vw cap; mobile 95vh max)');
+  console.log('rsvp-overlay: initialized (step-driven sizing, desktop 70vw cap; mobile up to 95vh)');
 })();
