@@ -1,44 +1,41 @@
-// rsvp-overlay.js — modal iframe overlay for wedding-site
+// rsvp-overlay.js — responsive modal overlay for wedding-site
 (function () {
-  // IMPORTANT: set this to your GitHub Pages front-end URL (the RSVP page you published)
-  // Example: "https://marsnbianca.github.io/rsvp-tool/"
+  // set to your Pages frontend URL (the RSVP page you published)
   var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- REPLACE with your frontend Pages URL
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
+  // create host/backdrop with css rules for responsiveness and animations
   var host = document.getElementById("rsvpHostOverlay");
   if (!host) {
     host = document.createElement("div");
     host.id = "rsvpHostOverlay";
-    // backdrop styles
-    host.style.position = "fixed";
-    host.style.inset = "0";
-    host.style.zIndex = "999999";
-    host.style.display = "none";
-    host.style.pointerEvents = "none";
-    host.style.background = "rgba(0,0,0,0.5)";
-    host.style.backdropFilter = "blur(3px)";
     document.body.appendChild(host);
+    // inject styles
+    var s = document.createElement('style');
+    s.textContent = `
+#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.rsvp-modal-card{ position:relative; width:100%; max-width:920px; height: min(90vh,780px); border-radius:14px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.3); background:transparent; transform: translateY(10px) scale(.98); opacity:0; transition: transform .22s cubic-bezier(.2,.9,.3,1), opacity .18s ease; }
+.rsvp-host-open .rsvp-modal-card{ transform: translateY(0) scale(1); opacity:1; }
+.rsvp-modal-iframe{ width:100%; height:100%; border:0; display:block; background:transparent; }
+.rsvp-modal-close{ position:absolute; right:10px; top:10px; z-index:10; background:rgba(255,255,255,0.92); border:0; width:36px; height:36px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 18px rgba(0,0,0,0.12); }
+.rsvp-modal-close svg{ width:16px; height:16px; color:#111; }
+/* mobile: near full screen */
+@media (max-width:640px){
+  .rsvp-modal-card{ width: calc(100% - 20px); height: calc(100% - 24px); max-width:none; border-radius:10px; }
+  .rsvp-modal-close{ right:8px; top:8px; background:rgba(255,255,255,0.95); }
+}
+/* tablet */
+@media (min-width:641px) and (max-width:1024px){
+  .rsvp-modal-card{ width: min(780px, 92%); height: min(86vh,760px); border-radius:12px; }
+}
+    `;
+    document.head.appendChild(s);
   }
 
   var container = null;
   var iframe = null;
+  var closeBtn = null;
   var lastFocus = null;
-
-  function makeContainer() {
-    container = document.createElement("div");
-    container.style.position = "absolute";
-    container.style.left = "50%";
-    container.style.top = "50%";
-    container.style.transform = "translate(-50%, -50%)";
-    container.style.display = "flex";
-    container.style.alignItems = "center";
-    container.style.justifyContent = "center";
-    container.style.width = "100%";
-    container.style.height = "100%";
-    container.style.pointerEvents = "none"; // allow backdrop clicks to hit host
-    host.appendChild(container);
-    return container;
-  }
 
   function lockScroll(lock) {
     if (lock) {
@@ -53,98 +50,88 @@
   }
 
   function openRSVP(e) {
-    if (e && typeof e.preventDefault === "function") {
-      e.preventDefault();
-      try { e.stopPropagation(); } catch(_) {}
-    }
-
+    if (e && typeof e.preventDefault === "function") { e.preventDefault(); try{ e.stopPropagation(); }catch(_){} }
     lastFocus = document.activeElement;
 
-    host.style.display = "block";
-    host.style.pointerEvents = "auto";
+    host.innerHTML = ""; // clear any existing
+    host.style.display = "flex";
+    host.classList.add('rsvp-host-open');
 
-    if (!container) makeContainer();
+    // create card
+    var card = document.createElement('div');
+    card.className = 'rsvp-modal-card';
+    card.setAttribute('role','dialog');
+    card.setAttribute('aria-modal','true');
 
-    // create a centered card to hold the iframe (so click outside closes)
-    var card = document.createElement("div");
-    card.style.pointerEvents = "auto";
-    card.style.width = "min(920px, 96%)";
-    card.style.maxWidth = "920px";
-    card.style.height = "min(90vh, 780px)";
-    card.style.maxHeight = "90vh";
-    card.style.background = "transparent";
-    card.style.borderRadius = "12px";
-    card.style.boxShadow = "0 20px 60px rgba(0,0,0,0.25)";
-    card.style.overflow = "hidden";
+    // close button
+    closeBtn = document.createElement('button');
+    closeBtn.className = 'rsvp-modal-close';
+    closeBtn.setAttribute('aria-label','Close RSVP');
+    closeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    closeBtn.addEventListener('click', closeRSVP);
+    card.appendChild(closeBtn);
 
-    iframe = document.createElement("iframe");
+    // iframe
+    iframe = document.createElement('iframe');
+    iframe.className = 'rsvp-modal-iframe';
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.style.border = "0";
-    iframe.style.display = "block";
-    iframe.setAttribute("title", "RSVP");
-    iframe.setAttribute("allowtransparency", "true");
-
-    // clicking backdrop (host) closes; clicking inside card does not
-    host.addEventListener("click", function onHostClick(ev){
-      if (ev.target === host) {
-        closeRSVP();
-      }
-    }, { once: false });
-
+    iframe.setAttribute('title','RSVP');
+    iframe.setAttribute('allowtransparency','true');
     card.appendChild(iframe);
-    // clear container and append card
-    container.innerHTML = "";
-    container.appendChild(card);
+
+    host.appendChild(card);
+
+    // clicking backdrop closes modal (but not clicks inside the card)
+    host.addEventListener('click', function onHostClick(ev){
+      if (ev.target === host) closeRSVP();
+    });
 
     lockScroll(true);
-    console.log("rsvp-overlay: opened modal ->", iframe.src);
+    console.log('rsvp-overlay: opened modal ->', iframe.src);
   }
 
   function closeRSVP() {
-    if (container) container.innerHTML = "";
+    host.innerHTML = "";
     host.style.display = "none";
-    host.style.pointerEvents = "none";
+    host.classList.remove('rsvp-host-open');
     lockScroll(false);
-    try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (_) {}
+    try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch(_) {}
     lastFocus = null;
     iframe = null;
-    console.log("rsvp-overlay: closed");
+    console.log('rsvp-overlay: closed');
   }
 
-  // delegated click to open overlay (matches button/image on wedding site)
-  document.addEventListener("click", function (e) {
+  // delegated click to open overlay
+  document.addEventListener('click', function(e){
     var t = e.target;
     var img = t.closest && t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"], [data-rsvp="open"]');
-    if (img) { openRSVP(e); return; }
+    if (img){ openRSVP(e); return; }
     var el = t.closest && t.closest("a, button, div, span");
     if (el) {
-      var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
-      if (txt === "rsvp") { openRSVP(e); return; }
+      var txt = (el.innerText || el.textContent || '').trim().toLowerCase();
+      if (txt === 'rsvp'){ openRSVP(e); return; }
     }
   }, true);
 
   // listen for close message from iframe
-  window.addEventListener("message", function (e) {
-    if (!e) return;
-    // allow messages from your site and Google domains
+  window.addEventListener('message', function(e){
+    if(!e) return;
     try {
       if (e.origin !== RSVP_ORIGIN && !e.origin.startsWith("https://script.googleusercontent.com") && !e.origin.startsWith("https://script.google.com") && !e.origin.startsWith(RSVP_URL)) {
         console.warn("rsvp-overlay: ignoring message from origin", e.origin);
         return;
       }
-    } catch (_) {}
-    if (e.data === "RSVP:CLOSE") closeRSVP();
+    } catch(_) {}
+    if (e.data === 'RSVP:CLOSE') closeRSVP();
   });
 
-  // ESC closes overlay
-  window.addEventListener("keydown", function (e) {
-    if (e && e.key === "Escape" && host.style.display === "block") closeRSVP();
+  // ESC to close
+  window.addEventListener('keydown', function(e){
+    if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // debug helpers
+  // expose debug
   window.__rsvp = { open: openRSVP, close: closeRSVP, info: function(){ return { RSVP_URL: RSVP_URL }; } };
 
-  console.log("rsvp-overlay: ready (modal). Use window.__rsvp.open()");
+  console.log('rsvp-overlay: responsive modal initialized');
 })();
