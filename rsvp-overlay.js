@@ -2,20 +2,22 @@
 // Path: wedding-site/rsvp-overlay.js
 // Include from your wedding-site index.html: <script src="rsvp-overlay.js"></script>
 //
-// Parent sizing is step-driven (padding + min-height + max-height caps).
-// This build DOES NOT depend on child HEIGHT messages. It includes smooth transitions
-// and a DEBUG flag you can toggle with window.__rsvp.setDebug(true).
-// Width restored to the previous approved settings: desktop 60vw cap.
+// Behavior implemented here (per your request):
+// - Apply ONLY height recommendations (min/max) per device breakpoint.
+// - Modal/iframe will grow/shrink with content when possible; if the child reports its content height (RSVP:HEIGHT)
+//   the parent will use that but clamp it to the device max. If the child doesn't report height the iframe is left
+//   'auto' and CSS min/max take effect (internal iframe scroll will occur if content exceeds max).
+// - Uses svh / vh units for mobile/desktop caps as in your guide.
+// - Adds a small smooth transition and a DEBUG flag you can toggle: window.__rsvp.setDebug(true).
 
 (function () {
-  // CONFIG
-  var DEBUG = false; // toggle with window.__rsvp.setDebug(true)
-  var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- update if needed
-  var RSVP_ORIGIN = "https://marsnbianca.github.io";
-
+  var DEBUG = false;
   function log() { if (DEBUG) console.log.apply(console, arguments); }
 
-  // Create host if not present
+  var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- replace if needed
+  var RSVP_ORIGIN = "https://marsnbianca.github.io";
+
+  // ensure host exists
   var host = document.getElementById("rsvpHostOverlay");
   if (!host) {
     host = document.createElement("div");
@@ -28,34 +30,40 @@
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:1rem; box-sizing:border-box; }",
 
-      /* card base: animated padding + entrance */
+      /* Card and iframe base styles */
       ".rsvp-modal-card{ position:relative; width:auto; max-width:96vw; box-sizing:border-box; background:#fff; border-radius:0.75rem; overflow:visible;",
-      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition: transform .28s cubic-bezier(.2,.9,.2,1), padding .22s ease, width .18s ease, opacity .18s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
+      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition: transform .22s ease, padding .18s ease, width .18s ease, opacity .12s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
 
-      /* Restore width caps requested earlier: desktop 60vw capped to 50rem */
+      /* Iframe: allow it to size with content; enforce min/max heights per breakpoints (your guide rules) */
+      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box;",
+      " height:auto; transition: max-height .18s ease, height .18s ease; }",
+
+      /* MOBILE (default) — small devices */
+      ".rsvp-modal-card .rsvp-modal-iframe{ min-height:20svh; max-height:85svh; }",
+
+      /* Tablet */
+      "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card .rsvp-modal-iframe{ min-height:300px; max-height:80svh; } }",
+
+      /* Desktop */
+      "@media (min-width:1008px){ .rsvp-modal-card .rsvp-modal-iframe{ min-height:400px; max-height:70vh; } }",
+
+      /* Card size caps (keeping width as you asked earlier) */
       "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(90vw, 26rem); } }",
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:76vw; } }",
-      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(60vw, 50rem); min-width: 36rem; } }",
+      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(60vw, 50rem); min-width:36rem; } }",
 
-      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box; transition: max-height .22s ease, height .18s ease; }",
-
+      /* Close button */
       ".rsvp-modal-close{ position:absolute; right:0.6rem; top:0.6rem; z-index:10; background:rgba(255,255,255,0.95); border:0;",
       " width:2.25rem; height:2.25rem; border-radius:0.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center;",
-      " box-shadow:0 0.3rem 1rem rgba(0,0,0,0.12); }",
-
-      /* entrance helper classes */
-      ".rsvp-modal-card.rsvp-enter{ transform: translateY(-6px); opacity: 0; }",
-      ".rsvp-modal-card.rsvp-enter.rsvp-enter-to{ transform: translateY(0); opacity: 1; }"
+      " box-shadow:0 0.3rem 1rem rgba(0,0,0,0.12); }"
     ].join('');
     document.head.appendChild(style);
   }
 
   var iframe = null, card = null, lastFocus = null, hostClickHandler = null, topCloseBtn = null;
-  var dvhTimer = null;
 
   function lockScroll(lock) {
     if (lock) {
-      // keep document from scrolling; overlay may scroll if needed (we keep overlay centered)
       document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
       document.body.style.touchAction = 'none';
@@ -66,82 +74,20 @@
     }
   }
 
-  // dynamic viewport variable (--dvh)
-  function updateDvh() {
-    if (dvhTimer) clearTimeout(dvhTimer);
-    dvhTimer = setTimeout(function () {
-      var dv = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--dvh', dv + 'px');
-      log('updateDvh ->', dv + 'px');
-    }, 80);
-  }
-  updateDvh();
-  window.addEventListener('resize', updateDvh);
-  window.addEventListener('orientationchange', updateDvh);
-  if (window.visualViewport) {
-    try {
-      window.visualViewport.addEventListener('resize', updateDvh);
-      window.visualViewport.addEventListener('scroll', updateDvh);
-    } catch (_) {}
-  }
-
-  // breakpoint config: restore earlier approved maxs
-  function breakpointConfig() {
+  // breakpoint caps used when we clamp a child-reported height (in px)
+  function getRecommendedMaxPx() {
     var vw = window.innerWidth || document.documentElement.clientWidth;
     var vh = window.innerHeight || document.documentElement.clientHeight;
     if (vw >= 1008) {
-      return { maxPct: 65, pxCap: 650, padMinRem: 0.8, padMaxRem: 1.6, widthVw: 60, minHeightRem: 10 };
-    } else if (vw >= 641) {
-      return { maxPct: 55, pxCap: Math.round(vh * 0.9), padMinRem: 0.7, padMaxRem: 1.2, widthVw: 76, minHeightRem: 9 };
-    } else {
-      return { maxPct: 95, pxCap: Math.round(vh * 0.95), padMinRem: 0.5, padMaxRem: 1.0, widthVw: 90, minHeightRem: 6 };
+      // desktop uses vh static
+      return Math.min(Math.round(vh * 0.70), 9999); // max 70vh (no lower px cap here; keep large)
     }
-  }
-
-  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-  function remToPx(rem) { var r = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16; return rem * r; }
-  function preferredPaddingRem(stepName) {
-    const map = { search:0.6, matches:0.7, notInList:0.6, attendance:1.0, transport:0.8, phone:0.7, notes:0.7, review:0.8, thanks:0.6 };
-    return map[stepName] || 0.8;
-  }
-
-  // Apply sizing based on step only (no child height)
-  function applySizingFromStep(stepName, maxSeats) {
-    if (!iframe || !card || !host) return;
-    var cfg = breakpointConfig();
-    log('applySizingFromStep', stepName, maxSeats, cfg);
-
-    // padding
-    var pref = preferredPaddingRem(stepName || '');
-    var padRem = clamp(pref, cfg.padMinRem, cfg.padMaxRem);
-    var padHRem = Math.max(0.6, padRem * 0.6);
-
-    card.style.paddingTop = padRem + 'rem';
-    card.style.paddingBottom = padRem + 'rem';
-    card.style.paddingLeft = padHRem + 'rem';
-    card.style.paddingRight = padHRem + 'rem';
-
-    // min-height based on base content rem + padding (converted to px)
-    var baseContentRem = cfg.minHeightRem || 9;
-    var minHpx = Math.round(remToPx(baseContentRem) + remToPx(padRem) * 2);
-    iframe.style.minHeight = minHpx + 'px';
-
-    // max-height using dynamic viewport (--dvh) and px cap
-    var pct = cfg.maxPct || 65;
-    var pxCap = cfg.pxCap || 650;
-    iframe.style.maxHeight = 'min(' + pxCap + 'px, calc(var(--dvh) * ' + pct + '))';
-    // allow internal scroll if content exceeds max
-    iframe.style.overflowY = 'auto';
-
-    // width target restored to earlier approved values
-    card.style.width = cfg.widthVw + 'vw';
-
-    // subtle entrance animation
-    if (!card.classList.contains('rsvp-enter')) {
-      card.classList.add('rsvp-enter');
-      requestAnimationFrame(function () { card.classList.add('rsvp-enter-to'); });
-      setTimeout(function () { card.classList.remove('rsvp-enter', 'rsvp-enter-to'); }, 350);
+    if (vw >= 641) {
+      // tablet: 80svh — interpret using vh as fallback
+      return Math.round(vh * 0.80);
     }
+    // mobile: 85svh (use vh fallback)
+    return Math.round(vh * 0.85);
   }
 
   function createTopClose() {
@@ -153,17 +99,11 @@
     topCloseBtn.addEventListener('click', closeRSVP);
   }
 
-  function setTopCloseVisible(visible) {
-    if (!topCloseBtn) return;
-    topCloseBtn.style.display = visible ? '' : 'none';
-  }
-
   function openRSVP(e) {
-    log('openRSVP called');
     if (e && typeof e.preventDefault === "function") { e.preventDefault(); try { e.stopPropagation(); } catch (_) {} }
-
     lastFocus = document.activeElement;
 
+    // clear host
     host.innerHTML = '';
     host.style.display = 'flex';
     host.style.pointerEvents = 'auto';
@@ -182,9 +122,11 @@
     iframe.className = 'rsvp-modal-iframe';
     iframe.setAttribute('title', 'RSVP');
     iframe.setAttribute('allowtransparency', 'true');
+    // keep iframe scrolling allowed — internal scrolling will happen only if content > max-height
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
+    // leave height:auto so iframe grows with content where possible (cross-origin limit)
     iframe.style.height = 'auto';
     iframe.style.boxSizing = 'border-box';
 
@@ -196,10 +138,13 @@
     };
     host.addEventListener('click', hostClickHandler);
 
+    // On load, request the active step (so parent can apply any step-driven padding if you still need it)
     iframe.addEventListener('load', function () {
-      try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) { log('REQUEST_STEP failed', err); }
-      setTimeout(function(){
-        try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) { log('REQUEST_STEP failed', err); }
+      try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {}
+      // request child height if it can provide it
+      try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
+      setTimeout(function () {
+        try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
       }, 160);
     });
 
@@ -208,7 +153,6 @@
   }
 
   function closeRSVP() {
-    log('closeRSVP');
     if (hostClickHandler) {
       try { host.removeEventListener('click', hostClickHandler); } catch (_) {}
       hostClickHandler = null;
@@ -224,7 +168,50 @@
     console.info('rsvp-overlay: closed');
   }
 
-  // Delegated click to open
+  // If child posts height we will use it, but clamp to recommended max.
+  function onChildHeightReported(h, stepName) {
+    if (!iframe || !card || !host) return;
+    var reported = parseInt(h, 10) || 0;
+    if (!reported) return;
+    var recommendedMax = getRecommendedMaxPx();
+
+    // clamp reported height
+    var finalH = Math.min(reported, recommendedMax);
+
+    // Apply to iframe: set explicit height so internal scroll is removed when possible
+    iframe.style.height = finalH + 'px';
+    iframe.style.maxHeight = Math.max(finalH, recommendedMax) + 'px'; // keep max-height sensible
+
+    // center if it fits, otherwise allow overlay scroll (top-align)
+    if (reported <= recommendedMax) {
+      host.style.alignItems = 'center';
+      host.style.overflow = 'hidden';
+      card.style.marginTop = '';
+      card.style.marginBottom = '';
+    } else {
+      host.style.alignItems = 'flex-start';
+      host.style.overflow = 'auto';
+      card.style.marginTop = '1.5rem';
+      card.style.marginBottom = '1.5rem';
+    }
+    log('onChildHeightReported', reported, 'clamped->', finalH, 'recommendedMax', recommendedMax, 'step', stepName);
+  }
+
+  // fallback: apply only height recommendations via CSS (no child height)
+  function applyCssHeightRecommendations(stepName) {
+    if (!iframe || !card) return;
+    // CSS already defines min/max via media queries. We can optionally nudge padding per step here.
+    log('applyCssHeightRecommendations for step', stepName);
+    // keep iframe height auto and CSS min/max will apply
+    iframe.style.height = 'auto';
+    iframe.style.overflowY = 'auto';
+    host.style.alignItems = 'center';
+    host.style.overflow = 'hidden';
+    card.style.marginTop = '';
+    card.style.marginBottom = '';
+  }
+
+  // delegated opener (supports <img alt="openRSVP"> and .rsvp-btn)
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
@@ -238,12 +225,12 @@
     } catch (_) {}
   }, true);
 
-  // Listen for child RSVP:STEP (no dependence on height)
+  // Message listener: handle child messages (RSVP:HEIGHT and RSVP:STEP)
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
       if (typeof e.origin === 'string') {
-        var ok = (e.origin === RSVP_ORIGIN) || e.origin.startsWith(RSVP_URL) || e.origin.startsWith("https://script.googleusercontent.com") || e.origin.startsWith("https://script.google.com");
+        var ok = (e.origin === RSVP_ORIGIN) || e.origin.startsWith("https://script.googleusercontent.com") || e.origin.startsWith("https://script.google.com") || e.origin.startsWith(RSVP_URL);
         if (!ok) { log('ignoring message from', e.origin); return; }
       }
     } catch (_) { log('message origin check failed'); }
@@ -253,30 +240,42 @@
     log('parent received message', data && data.type ? data.type : data);
 
     if (typeof data === 'object' && data.type) {
+      if (data.type === 'RSVP:HEIGHT') {
+        // child reports content height in px
+        if (data.height) {
+          onChildHeightReported(data.height, data.step || '');
+          return;
+        }
+      }
       if (data.type === 'RSVP:STEP') {
-        applySizingFromStep(data.step || 'search', parseInt(data.maxSeats || 1, 10) || 1);
-        if (typeof data.hasBottomClose !== 'undefined') setTopCloseVisible(!data.hasBottomClose);
+        // only step name -> apply CSS height recommendations (no height)
+        applyCssHeightRecommendations(data.step || '');
         return;
       }
       if (data.type === 'RSVP:CLOSE') { closeRSVP(); return; }
-      if (data.type === 'RSVP:HAS_BOTTOM_CLOSE') { setTopCloseVisible(!data.hasBottomClose); return; }
+      if (data.type === 'RSVP:HAS_BOTTOM_CLOSE') {
+        // show/hide top close depending on child
+        if (!topCloseBtn) createTopClose();
+        topCloseBtn.style.display = data.hasBottomClose ? 'none' : '';
+        return;
+      }
     }
 
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
-  // ESC closes overlay
+  // Escape closes
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // Expose API and debug toggle
+  // expose debug toggle and API
   window.__rsvp = {
     open: openRSVP,
     close: closeRSVP,
-    setDebug: function (v) { DEBUG = !!v; log('DEBUG set to', DEBUG); },
+    setDebug: function (v) { DEBUG = !!v; log('DEBUG ->', DEBUG); },
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: initialized (step-driven padding/min/max; width restored to 60vw desktop)');
+  console.log('rsvp-overlay: initialized (height recommendations applied: min/max per device; responsive to child height when provided)');
 })();
