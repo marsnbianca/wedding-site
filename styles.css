@@ -7,7 +7,7 @@
 }
 
 /* Reset / base */
-*{box-sizing: border-box}
+*{box-sizing:border-box}
 html,body{height:100%}
 body {
   margin: 0;
@@ -40,8 +40,6 @@ body {
 }
 
 /* ---------- Ombré sky gradients for panels ---------- */
-
-/* Panel 1: clouds-only — lighter ombre sky */
 .panel-clouds {
   background: linear-gradient(180deg,
     #e6f9ff 0%,
@@ -50,7 +48,6 @@ body {
     #b3e2ff 100%);
 }
 
-/* Panel 2: sky transition (slightly deeper ombre) */
 .panel-sky {
   background: linear-gradient(180deg,
     #d8f2ff 0%,
@@ -59,7 +56,6 @@ body {
     #8fcff7 100%);
 }
 
-/* Panel 3: content ombre (fades into light content background) */
 .panel-content {
   background: linear-gradient(180deg,
     #cfeeff 0%,
@@ -67,28 +63,29 @@ body {
     #f7fbff 100%);
 }
 
-/* Parallax layers (background images, clouds, overlays) */
+/* Parallax layers (clouds and other decorative layers)
+   Note: cloud-layer elements are sized & positioned by JS based on data attributes.
+*/
 .parallax-layer{
   position: absolute;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%) translateY(0);
-  width: 140%;
-  height: 120%;
+  left: 0;
+  transform: translate3d(0,0,0);
   background-repeat: no-repeat;
-  background-position: center top;
-  background-size: cover;
+  background-position: center center;
+  background-size: contain;
   will-change: transform;
   backface-visibility: hidden;
   z-index: 0;
   pointer-events: none;
 }
 
-/* Cloud layers: 70% smaller (previous reference was about 60% => now ~18%) */
+/* Cloud layers - JS will set width/height/left/top/z-index for each cloud.
+   Use a sane default for very short/no-js scenarios.
+*/
 .cloud-layer {
-  background-size: auto 18%;
+  background-size: contain;
   opacity: 0.98;
-  z-index: 1;
   mix-blend-mode: normal;
 }
 
@@ -99,7 +96,7 @@ body {
   z-index: 2;
 }
 
-/* Foreground content (centered inside container) */
+/* Foreground content */
 .section-content{
   position: relative;
   z-index: 10;
@@ -159,10 +156,10 @@ footer small { color: #bfcbd6; }
 /* Responsive adjustments */
 @media (max-width: 900px) {
   :root { --panel-height: 70vh; }
-  .parallax-layer{ width: 220%; left: 50%; transform: translateX(-50%); }
+  .parallax-layer{ width: auto; left: 0; top: 0; transform: translate3d(0,0,0); }
 
   /* clouds slightly larger on smaller screens for visibility */
-  .cloud-layer { background-size: auto 30%; }
+  .cloud-layer { background-size: contain; }
 
   .section-content { padding: 1rem; }
   .image-button { height: clamp(3rem, 9vh, 4.5rem); }
@@ -170,7 +167,7 @@ footer small { color: #bfcbd6; }
 
 @media (max-width: 480px) {
   :root { --panel-height: 60vh; }
-  .cloud-layer { background-size: auto 35%; } /* larger on tiny screens to remain visible */
+
   .image-button { height: clamp(2.6rem, 10vh, 4rem); }
 }
 
