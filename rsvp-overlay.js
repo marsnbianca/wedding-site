@@ -3,11 +3,9 @@
 // Include from your wedding-site index.html: <script src="rsvp-overlay.js"></script>
 
 (function () {
-  // CONFIG: set this to your GitHub Pages front-end URL (the RSVP page you published)
   var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- REPLACE with your frontend Pages URL
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
-  // Create host/backdrop once
   var host = document.getElementById("rsvpHostOverlay");
   if (!host) {
     host = document.createElement("div");
@@ -42,12 +40,27 @@
     }
   }
 
-  // Set iframe height to child content height, capped by 90vh
+  // Determine breakpoint-specific max modal heights
+  function breakpointMaxHeight() {
+    var w = window.innerWidth || document.documentElement.clientWidth;
+    if (w >= 1200) return 720;      // Desktop
+    if (w >= 900) return 640;       // Large tablet / small desktop
+    if (w >= 600) return 560;       // Tablet
+    // mobile
+    return Math.floor(window.innerHeight * 0.8); // 80vh on small devices
+  }
+
+  // Set iframe height to child content height, capped by breakpoint
   function setHeights(childHeight) {
     if (!iframe || !card) return;
-    var viewportMax = Math.floor(window.innerHeight * 0.9);
+    var maxH = breakpointMaxHeight();
     var h = parseInt(childHeight, 10) || 0;
-    var finalH = Math.min(Math.max(h, 300), viewportMax); // clamp min 300px, max 90vh
+    if (isNaN(h) || h <= 0) {
+      iframe.style.height = Math.min(maxH, 520) + 'px';
+      return;
+    }
+    var finalH = Math.min(h, maxH);
+    finalH = Math.max(finalH, 300); // sensible min
     iframe.style.height = finalH + 'px';
     card.style.height = 'auto';
   }
@@ -76,19 +89,17 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // reasonable initial height while page loads
-    iframe.style.height = Math.min(Math.floor(window.innerHeight * 0.75), 700) + 'px';
+    // initial reasonable height while content loads
+    iframe.style.height = Math.min(breakpointMaxHeight(), 700) + 'px';
 
     card.appendChild(iframe);
     host.appendChild(card);
 
-    // backdrop click closes modal (not clicks inside card)
     hostClickHandler = function onHostClick(ev) {
       if (ev.target === host) closeRSVP();
     };
     host.addEventListener('click', hostClickHandler);
 
-    // on load try same-origin read and request child height
     iframe.addEventListener('load', function () {
       try {
         var doc = iframe.contentDocument || iframe.contentWindow.document;
@@ -122,7 +133,7 @@
     console.log('rsvp-overlay: closed');
   }
 
-  // Delegated click to open overlay
+  // Delegated open
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
@@ -138,7 +149,7 @@
     } catch (_) {}
   }, true);
 
-  // Messages from iframe child
+  // Messages from iframe
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
@@ -158,7 +169,6 @@
         closeRSVP();
         return;
       }
-      // RSVP:LOCKED / UNLOCKED are ignored since there is no top X anymore
     }
 
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
@@ -169,12 +179,7 @@
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // Helper API
-  window.__rsvp = {
-    open: openRSVP,
-    close: closeRSVP,
-    info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
-  };
+  window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
 
   console.log('rsvp-overlay: responsive modal initialized (auto-size)');
 })();
