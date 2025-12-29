@@ -5,133 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mars & Bianca — Wedding</title>
 
-  <style>
-    /* ---- layout / demo variables ---- */
-    :root{
-      --max-width: 980px;
-      --space: 1.25rem;
-      --accent: #b86b9d;
-      --text: #fff;
-      --panel-height: 100vh; /* default panel height */
-    }
-
-    html,body{height:100%}
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      color: var(--text);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      /* charcoal / deep-blue background as requested */
-      background: linear-gradient(135deg, #071428 0%, #0e2a44 60%, #123c57 100%);
-      overflow-x: hidden;
-    }
-
-    .container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
-
-    /* ---- PARALLAX SECTIONS ---- */
-    .parallax-section{
-      position: relative;
-      height: var(--panel-height);
-      min-height: 480px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: auto;
-    }
-
-    /* stacking and visual layers */
-    .parallax-layer{
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%) translateY(0);
-      width: 140%;
-      height: 120%;
-      background-repeat: no-repeat;
-      background-position: center top;
-      background-size: cover;
-      will-change: transform;
-      backface-visibility: hidden;
-      z-index: 0;
-    }
-    .parallax-layer--overlay{
-      mix-blend-mode: overlay;
-      opacity: 0.85;
-    }
-
-    /* content above layers */
-    .section-content{
-      position: relative;
-      z-index: 10;
-      text-align: center;
-      color: white;
-      text-shadow: 0 6px 18px rgba(0,0,0,0.35);
-      max-width: calc(var(--max-width) - 2rem);
-      padding: 2rem;
-    }
-
-    /* Example typographic scale for each panel */
-    .hero h1{ margin: 0 0 .5rem 0; font-size: clamp(2rem, 5vw, 4rem); }
-    .hero p.lead{ margin: 0 0 1rem 0; font-size: clamp(1rem, 1.6vw, 1.25rem); color: #f6eef8; }
-    .cta {
-      display:inline-block;
-      padding:.6rem 1.1rem;
-      background:var(--accent);
-      color:white;
-      border-radius:999px;
-      text-decoration:none;
-      font-weight:600;
-      box-shadow: 0 6px 18px rgba(184,107,157,0.18);
-    }
-
-    /* RSVP image button */
-    .rsvp-btn {
-      display:block;
-      margin: 1rem auto;
-      width: 120px;
-      height: 80px;
-      cursor: pointer;
-      border: 0;
-      background: transparent;
-      outline: none;
-    }
-
-    /* subtle separators for content sections that follow */
-    .content{
-      padding: 3rem 1rem;
-      max-width: var(--max-width);
-      margin: 0 auto;
-      background: none;
-      color: #fff;
-      text-align: left;
-    }
-
-    /* small-screen adjustments */
-    @media (max-width: 900px){
-      :root{ --panel-height: 70vh; }
-      .parallax-layer{ width: 220%; left: 50%; transform: translateX(-50%); }
-      .parallax-section{ min-height: 420px; }
-      .section-content{ padding: 1rem; }
-      .content { color: #111; } /* keep body text readable on small where panels are smaller */
-    }
-
-    /* Respect prefers-reduced-motion */
-    @media (prefers-reduced-motion: reduce){
-      .parallax-layer { transition: none !important; will-change: auto !important; }
-    }
-
-    /* simple fallback when JS disabled: show images as backgrounds via inline styles */
-    .no-js .parallax-layer { position: absolute; }
-  </style>
+  <!-- Link to external CSS -->
+  <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <div class="container">
     <!-- Panel 1: Hero -->
     <header class="parallax-section hero" id="panel-hero" aria-label="Hero">
-      <!-- layers: set data-speed to adjust scroll movement (higher moves more) -->
       <div class="parallax-layer" data-speed="0.12" data-bg="" aria-hidden="true"></div>
       <div class="parallax-layer parallax-layer--overlay" data-speed="0.25" data-bg="" aria-hidden="true"></div>
 
@@ -139,26 +20,21 @@
         <h1>Mars & Bianca</h1>
         <p class="lead">We're getting married — join us</p>
 
-        <!-- RSVP trigger image (updated src + alt per request)
-             Path used in this file: assets/buttons/RSVP1.PNG (relative to this HTML file)
-             Hover behavior is implemented with JS below so the src swaps to RSVP2.PNG on hover/focus.
-        -->
+        <!-- RSVP button (image) -->
         <img
           id="rsvp-trigger"
+          class="image-button"
           src="assets/buttons/RSVP1.PNG"
           alt="RSVP"
-          aria-label="RSVP"
-          title="RSVP"
-          class="rsvp-btn"
+          role="button"
+          tabindex="0"
           width="120"
           height="80"
         />
-
-        <p><a class="cta" href="#details">See details</a></p>
       </div>
     </header>
 
-    <!-- Panel 2: Location -->
+    <!-- Panel 2: Location (Map button placed here) -->
     <section class="parallax-section" id="panel-location" aria-label="Location">
       <div class="parallax-layer" data-speed="0.08" data-bg="" aria-hidden="true"></div>
       <div class="parallax-layer" data-speed="0.28" data-bg="" aria-hidden="true"></div>
@@ -166,7 +42,18 @@
       <div class="section-content">
         <h2>Location</h2>
         <p class="lead">A lovely venue in the countryside — directions and parking details below.</p>
-        <p><a class="cta" href="#rsvp">RSVP</a></p>
+
+        <!-- Map button (image) -->
+        <img
+          id="map-trigger"
+          class="image-button"
+          src="assets/buttons/MAP1.PNG"
+          alt="Map"
+          role="button"
+          tabindex="0"
+          width="140"
+          height="90"
+        />
       </div>
     </section>
 
@@ -178,17 +65,17 @@
       <div class="section-content">
         <h2>Schedule</h2>
         <p class="lead">Ceremony, reception, and after-party timings so you can plan the day.</p>
+        <!-- no text CTAs here per request — image buttons only -->
       </div>
     </section>
 
-    <!-- Panel 4: Details / Call to action -->
+    <!-- Panel 4: Details -->
     <section class="parallax-section" id="panel-details" aria-label="Details">
       <div class="parallax-layer" data-speed="0.07" data-bg="" aria-hidden="true"></div>
 
       <div class="section-content">
         <h2 id="details">Details</h2>
         <p class="lead">Dietary info, accommodations and more — RSVP to let us know you're coming.</p>
-        <p><a class="cta" href="#rsvp">RSVP</a></p>
       </div>
     </section>
 
@@ -204,43 +91,9 @@
     </footer>
   </div>
 
-  <!-- Image hover/focus swap for RSVP button (keeps functionality but swaps visuals on pointer/focus) -->
-  <script>
-    (function () {
-      const img = document.getElementById('rsvp-trigger');
-      if (!img) return;
-
-      // Paths relative to this HTML file — update if your directory is different.
-      const defaultSrc = 'assets/buttons/RSVP1.PNG';
-      const hoverSrc = 'assets/buttons/RSVP2.PNG';
-
-      // Defensive: ensure the images exist in your assets folder with the exact filenames/case.
-      img.src = defaultSrc;
-      img.alt = 'RSVP';
-      img.setAttribute('aria-label', 'RSVP');
-
-      // Swap on pointerenter/pointerleave and keyboard focus/blur for accessibility
-      img.addEventListener('pointerenter', () => { img.src = hoverSrc; });
-      img.addEventListener('pointerleave', () => { img.src = defaultSrc; });
-
-      img.addEventListener('focus', () => { img.src = hoverSrc; }, true);
-      img.addEventListener('blur', () => { img.src = defaultSrc; }, true);
-
-      // For older devices/browsers that fire mouseover/mouseout instead of pointer events:
-      img.addEventListener('mouseover', () => { img.src = hoverSrc; });
-      img.addEventListener('mouseout', () => { img.src = defaultSrc; });
-
-      // Touch devices: do not change on touchstart (touch users expect tap). If you want a tap preview,
-      // uncomment the lines below to temporarily show hover image on touchstart and revert on touchend.
-      // img.addEventListener('touchstart', () => { img.src = hoverSrc; });
-      // img.addEventListener('touchend', () => { setTimeout(() => img.src = defaultSrc, 200); });
-
-      // Ensure that if rsvp-overlay.js binds click handlers to this element, changing src/alt won't interfere.
-      // We preserved the id and left other attributes intact.
-    })();
-  </script>
-
-  <!-- Keep the RSVP overlay loader script (relative path). Make sure rsvp-overlay.js remains in the same directory as this file. -->
-  <script src="rsvp-overlay.js"></script>
+  <!-- Scripts: parallax + buttons + overlay -->
+  <script src="parallax.js" defer></script>
+  <script src="buttons.js" defer></script>
+  <script src="rsvp-overlay.js" defer></script>
 </body>
 </html>
