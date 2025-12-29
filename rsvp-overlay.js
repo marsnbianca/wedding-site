@@ -15,16 +15,16 @@
     var style = document.createElement('style');
     style.textContent = [
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
-      " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:18px; box-sizing:border-box; }",
+      " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:12px; box-sizing:border-box; }",
 
-      /* Modal sizing per requested breakpoints (relative units) */
-      ".rsvp-modal-card{ position:relative; width:100%; max-width:96vw; background:#fff; border-radius:14px; overflow:visible;",
-      " box-shadow:0 18px 50px rgba(0,0,0,0.32); transition:transform .18s ease,opacity .12s ease; padding:0; }",
+      /* Smaller modal widths per requested breakpoints */
+      ".rsvp-modal-card{ position:relative; width:100%; max-width:96vw; background:#fff; border-radius:12px; overflow:visible;",
+      " box-shadow:0 14px 40px rgba(0,0,0,0.24); transition:transform .18s ease,opacity .12s ease; padding:0; }",
 
       /* Tablet */
-      "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:80vw; } }",
-      /* Desktop */
-      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(900px, 70vw); } }",
+      "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:72vw; } }",
+      /* Desktop: smaller than before */
+      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(680px, 60vw); } }",
 
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }",
 
@@ -48,16 +48,14 @@
     }
   }
 
-  // Breakpoint max heights (relative)
+  // Reduced caps (smaller than before)
   function breakpointMaxHeight() {
     var w = window.innerWidth || document.documentElement.clientWidth;
-    if (w >= 1008) return Math.round(Math.min(window.innerHeight * 0.65, 650)); // desktop cap ~65vh or 650px
-    if (w >= 641) return Math.round(Math.min(window.innerHeight * 0.9, window.innerHeight)); // tablet up to 90vh
-    // mobile
-    return Math.floor(window.innerHeight * 1.0); // allow up to full screen height
+    if (w >= 1008) return Math.round(Math.min(window.innerHeight * 0.60, 600)); // desktop: up to 60vh or 600px
+    if (w >= 641) return Math.round(Math.min(window.innerHeight * 0.9, 520));    // tablet: up to 520px
+    return Math.floor(window.innerHeight * 0.95); // mobile: up to 95vh
   }
 
-  // set iframe height based on child reported height, cap by breakpoint
   function setHeights(childHeight) {
     if (!iframe || !card) return;
     var maxH = breakpointMaxHeight();
@@ -103,8 +101,7 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // initial height: small sensible height until child reports actual height
-    iframe.style.height = Math.min(breakpointMaxHeight(), 520) + 'px';
+    iframe.style.height = Math.min(breakpointMaxHeight(), 480) + 'px'; // initial smaller height
 
     card.appendChild(iframe);
     host.appendChild(card);
@@ -121,7 +118,7 @@
           var h = Math.max(doc.documentElement.scrollHeight || 0, (doc.body && doc.body.scrollHeight) || 0);
           if (h) setHeights(h);
         }
-      } catch (err) { /* cross-origin possible */ }
+      } catch (err) {}
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
     });
 
@@ -204,5 +201,5 @@
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: responsive modal initialized (auto-size + top X)');
+  console.log('rsvp-overlay: responsive modal initialized (smaller sizes + top X)');
 })();
