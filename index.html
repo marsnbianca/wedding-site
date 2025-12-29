@@ -9,30 +9,58 @@
 </head>
 
 <body>
-  <!--
-    Full-bleed parallax panels (outside centered .container so panels are seamless on tablet)
-    Panel 1: clouds-only (sky background + clouds)
-    Panel 2: sky transition (allows user to keep scrolling while clouds clear)
-    Panel 3: content (Mars & Bianca + RSVP)
-  -->
-
-  <!-- PANEL 1: CLOUDS (no foreground text) -->
+  <!-- PANEL 1: CLOUDS (sky ombre) -->
   <section class="parallax-section panel-clouds" id="panel-clouds" aria-label="Clouds">
-    <!-- cloud layers: smaller (50% smaller than previous) and different horizontal speeds -->
-    <div class="parallax-layer cloud-layer" data-speed="0.04" data-side-speed="0.65" data-dir="-1" data-bg="assets/parallax/cloud1.png" aria-hidden="true"></div>
-    <div class="parallax-layer cloud-layer" data-speed="0.06" data-side-speed="0.50" data-dir="1"  data-bg="assets/parallax/cloud2.png" aria-hidden="true"></div>
-    <div class="parallax-layer cloud-layer" data-speed="0.08" data-side-speed="0.80" data-dir="-1" data-bg="assets/parallax/cloud3.png" aria-hidden="true"></div>
-    <div class="parallax-layer cloud-layer" data-speed="0.10" data-side-speed="0.40" data-dir="1" data-bg="assets/parallax/cloud4.png" aria-hidden="true"></div>
-    <div class="parallax-layer cloud-layer" data-speed="0.12" data-side-speed="0.95" data-dir="-1" data-bg="assets/parallax/cloud5.png" aria-hidden="true"></div>
+    <!-- cloud layers in panel 1 (some higher, some lower via data-vertical-offset) -->
+    <div class="parallax-layer cloud-layer"
+         data-speed="0.04"
+         data-side-speed="0.65"
+         data-dir="-1"
+         data-vertical-offset="-10"
+         data-bg="assets/parallax/cloud1.png"
+         aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-speed="0.06"
+         data-side-speed="0.50"
+         data-dir="1"
+         data-vertical-offset="5"
+         data-bg="assets/parallax/cloud2.png"
+         aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-speed="0.08"
+         data-side-speed="0.80"
+         data-dir="-1"
+         data-vertical-offset="-25"
+         data-bg="assets/parallax/cloud3.png"
+         aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 2: SKY (transition area to allow clearing animation to finish) -->
+  <!-- PANEL 2: SKY TRANSITION (more scattered clouds across panel 2) -->
   <section class="parallax-section panel-sky" id="panel-sky" aria-label="Sky transition">
-    <!-- a subtle sky layer so background transitions smoothly; no foreground content here -->
+    <!-- additional cloud layers start here with different vertical offsets -->
+    <div class="parallax-layer cloud-layer"
+         data-speed="0.10"
+         data-side-speed="0.40"
+         data-dir="1"
+         data-vertical-offset="20"
+         data-bg="assets/parallax/cloud4.png"
+         aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-speed="0.12"
+         data-side-speed="0.95"
+         data-dir="-1"
+         data-vertical-offset="-5"
+         data-bg="assets/parallax/cloud5.png"
+         aria-hidden="true"></div>
+
+    <!-- subtle sky layer to help the gradient transition -->
     <div class="parallax-layer" data-speed="0.02" data-bg="" aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 3: CONTENT (Mars & Bianca + RSVP) -->
+  <!-- PANEL 3: CONTENT (ombre sky to content) -->
   <section class="parallax-section panel-content" id="panel-content" aria-label="Welcome">
     <div class="parallax-layer parallax-layer--overlay" data-speed="0.18" data-bg="" aria-hidden="true"></div>
 
@@ -40,7 +68,7 @@
       <h1>Mars & Bianca</h1>
       <p class="lead">We're getting married — join us</p>
 
-      <!-- RSVP image button: legacy attributes kept for overlay script compatibility -->
+      <!-- RSVP image button: legacy attributes kept for overlay compatibility -->
       <img
         id="rsvp-trigger"
         class="image-button rsvp-btn"
@@ -52,7 +80,7 @@
         tabindex="0"
       />
 
-      <!-- Map button is optional here; keep it if you want -->
+      <!-- Map button -->
       <img
         id="map-trigger"
         class="image-button"
@@ -64,7 +92,7 @@
     </div>
   </section>
 
-  <!-- MAIN body content (non-parallax) - keep as centered .container -->
+  <!-- MAIN content (non-parallax) -->
   <main class="container page-content">
     <h2 id="details">Details</h2>
     <p>Parallax sections above are decorative — add your text, photos, registry, etc. below.</p>
