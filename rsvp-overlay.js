@@ -21,12 +21,14 @@
       "@media (max-width:1200px){ .rsvp-modal-card{ max-width:760px; } }",
       "@media (max-width:900px){ .rsvp-modal-card{ max-width:640px; } }",
       "@media (max-width:600px){ #rsvpHostOverlay{ padding:12px; } .rsvp-modal-card{ max-width:96%; border-radius:12px; } }",
-      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }"
+      ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }",
+      ".rsvp-modal-close{ position:absolute; right:10px; top:10px; z-index:10; background:rgba(255,255,255,0.95); border:0; width:36px; height:36px;",
+      " border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.12); }"
     ].join('');
     document.head.appendChild(style);
   }
 
-  var iframe = null, card = null, lastFocus = null, hostClickHandler = null;
+  var iframe = null, card = null, lastFocus = null, hostClickHandler = null, topCloseBtn = null;
 
   function lockScroll(lock) {
     if (lock) {
@@ -40,7 +42,6 @@
     }
   }
 
-  // breakpoint-specific max modal heights
   function breakpointMaxHeight() {
     var w = window.innerWidth || document.documentElement.clientWidth;
     if (w >= 1200) return 720;
@@ -49,15 +50,23 @@
     return Math.floor(window.innerHeight * 0.8);
   }
 
-  // Set iframe height to child content height, capped by breakpoint
   function setHeights(childHeight) {
     if (!iframe || !card) return;
     var maxH = breakpointMaxHeight();
     var h = parseInt(childHeight, 10) || 0;
     var finalH = Math.min(Math.max(h, 300), maxH);
     iframe.style.height = finalH + 'px';
-    iframe.style.maxHeight = Math.max(finalH, maxH) + 'px';
     card.style.height = 'auto';
+  }
+
+  function createTopClose() {
+    if (topCloseBtn) return;
+    topCloseBtn = document.createElement('button');
+    topCloseBtn.className = 'rsvp-modal-close';
+    topCloseBtn.setAttribute('aria-label', 'Close RSVP');
+    topCloseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    topCloseBtn.addEventListener('click', closeRSVP);
+    // append later to card when card is created
   }
 
   function openRSVP(e) {
@@ -76,6 +85,10 @@
     card.className = 'rsvp-modal-card';
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-modal', 'true');
+
+    // top X
+    createTopClose();
+    if (topCloseBtn) card.appendChild(topCloseBtn);
 
     iframe = document.createElement('iframe');
     iframe.className = 'rsvp-modal-iframe';
@@ -125,6 +138,12 @@
     console.log('rsvp-overlay: closed');
   }
 
+  // show/hide the top X based on child message
+  function setTopCloseVisible(visible) {
+    if (!topCloseBtn) return;
+    topCloseBtn.style.display = visible ? '' : 'none';
+  }
+
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
@@ -148,11 +167,18 @@
         if (!ok) { console.warn('rsvp-overlay: ignoring message from origin', e.origin); return; }
       }
     } catch (_) {}
+
     var data = e.data;
     if (data && typeof data === 'object' && data.type) {
       if (data.type === 'RSVP:HEIGHT') { if (data.height) setHeights(data.height); return; }
       if (data.type === 'RSVP:CLOSE') { closeRSVP(); return; }
+      if (data.type === 'RSVP:HAS_BOTTOM_CLOSE') {
+        // data.hasBottomClose === true => child shows a bottom Close; hide top X
+        setTopCloseVisible(!data.hasBottomClose);
+        return;
+      }
     }
+
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
@@ -160,7 +186,12 @@
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
+  // ensure topCloseBtn is available globally even before open (create it)
+  createTopClose();
+  // default: top close visible
+  setTopCloseVisible(true);
+
   window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
 
-  console.log('rsvp-overlay: responsive modal initialized (auto-size)');
+  console.log('rsvp-overlay: responsive modal initialized (auto-size + top X)');
 })();
