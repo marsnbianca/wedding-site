@@ -5,39 +5,63 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mars & Bianca — Wedding</title>
   <style>
-    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
-    header { height: 60vh; background: linear-gradient(135deg, #f7e7f2 0%, #fff 100%); display:flex; align-items:center; justify-content:center; }
+    /* minimal demo styles */
+    :root{
+      --max-width: 980px;
+      --space: 1.25rem;
+    }
+    html,body{height:100%}
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      color: #111;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      background: linear-gradient(135deg,#f7e7f2 0%,#fff 100%);
+    }
+    .container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
+    header { height: 60vh; display:flex; align-items:center; justify-content:center; }
     .hero { text-align:center; }
+    h1 { margin: 0 0 .25rem 0; font-size: clamp(1.6rem, 4vw, 2.6rem); }
+    p.lead { margin: 0 0 1rem 0; color:#444; }
     .rsvp-btn { display:inline-block; cursor:pointer; border:0; background:transparent; }
-    .content { padding: 2rem; }
+    .content { padding: 1.25rem 0; }
+    footer { padding: 1.25rem 0; font-size: .9rem; color:#666; text-align:center; }
+    /* overlay host gets injected by rsvp-overlay.js */
   </style>
 </head>
 <body>
+  <div class="container">
+    <header>
+      <div class="hero">
+        <h1>Mars & Bianca</h1>
+        <p class="lead">We're getting married — join us</p>
 
-<header>
-  <div class="hero">
-    <h1>Mars & Bianca</h1>
-    <p>We're getting married — join us</p>
+        <!-- RSVP trigger image — ensure path is correct in your repo -->
+        <img
+          src="assets/buttons/RSVP-1.png"
+          alt="openRSVP"
+          aria-label="openRSVP"
+          title="openRSVP"
+          class="rsvp-btn"
+          width="120"
+          height="80"
+          style="display:block; margin: 1rem auto;"
+        />
+      </div>
+    </header>
 
-    <!-- Picture button: keep alt/title/aria-label = "openRSVP" -->
-    <img src="assets/buttons/RSVP-1.png"
-         alt="openRSVP"
-         aria-label="openRSVP"
-         title="openRSVP"
-         class="rsvp-btn"
-         width="120"
-         height="80"
-         style="display:block; margin: 1rem auto;" />
+    <main class="content">
+      <h2>Details</h2>
+      <p>Parallax, animations and more go here — build your pages however you like.</p>
+    </main>
+
+    <footer>
+      <small>© Mars & Bianca</small>
+    </footer>
   </div>
-</header>
 
-<div class="content">
-  <h2>Details</h2>
-  <p>Parallax, animations and more go here — build your pages however you like.</p>
-</div>
-
-<!-- modal overlay script (relative path) -->
-<script src="rsvp-overlay.js"></script>
-
+  <!-- Overlay loader script (relative path). Make sure rsvp-overlay.js is in same directory as this file. -->
+  <script src="rsvp-overlay.js"></script>
 </body>
 </html>
