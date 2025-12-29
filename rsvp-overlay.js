@@ -1,12 +1,18 @@
 // rsvp-overlay.js — responsive modal overlay for wedding-site (parent)
 // Path: wedding-site/rsvp-overlay.js
 // Include from your wedding-site index.html: <script src="rsvp-overlay.js"></script>
+//
+// This version uses a JS-updated CSS variable (--dvh) that represents 1% of the dynamic viewport height.
+// We set iframe max-height using a min(px, calc(var(--dvh) * N)) expression so browsers use the dynamic-vh
+// value (reduces issues when address bars show/hide on mobile) while still capping to an absolute px value.
+// Note: using dynamic viewport height can cause reflows ("jank") as the browser UI appears/disappears.
+// We debounce updates and listen to visualViewport where available to reduce noise.
 
 (function () {
   var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- REPLACE with your frontend Pages URL
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
-  // Ensure host element exists immediately
+  // Create host container
   var host = document.getElementById("rsvpHostOverlay");
   if (!host) {
     host = document.createElement("div");
@@ -19,15 +25,11 @@
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:1rem; box-sizing:border-box; }",
 
-      /* card base: transitions for width/padding/height */
       ".rsvp-modal-card{ position:relative; width:auto; max-width:96vw; box-sizing:border-box; background:#fff; border-radius:0.75rem; overflow:visible;",
       " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease, width .18s ease, padding .18s ease, max-height .18s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
 
-      /* Mobile: slightly wider allowed */
       "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(96vw, 26rem); } }",
-      /* Tablet */
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:82vw; } }",
-      /* Desktop: 70vw max and cap at 70rem; min-width to avoid overly narrow */
       "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(70vw, 70rem); min-width: 36rem; } }",
 
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box; }",
@@ -53,32 +55,53 @@
     }
   }
 
-  // Breakpoint-based max-height recommendations (relative units -> compute px)
+  // update dynamic viewport unit: --dvh (1% of viewport height at runtime)
+  var dvhTimer = null;
+  function updateDvh() {
+    if (dvhTimer) clearTimeout(dvhTimer);
+    dvhTimer = setTimeout(function () {
+      var dv = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--dvh', dv + 'px');
+    }, 80); // debounce a little to avoid too many updates
+  }
+
+  // initial set
+  updateDvh();
+
+  // listen to resize/orientationchange/visualViewport to update --dvh
+  window.addEventListener('resize', updateDvh);
+  window.addEventListener('orientationchange', updateDvh);
+  if (window.visualViewport) {
+    try {
+      window.visualViewport.addEventListener('resize', updateDvh);
+      window.visualViewport.addEventListener('scroll', updateDvh);
+    } catch (_) {}
+  }
+
+  // breakpoint-config for recommended caps (we use dynamic units when available)
   function breakpointConfig() {
     var vw = window.innerWidth || document.documentElement.clientWidth;
     var vh = window.innerHeight || document.documentElement.clientHeight;
     if (vw >= 1008) {
-      // Desktop: recommended max ~65vh, capped to 650px
       return {
-        maxHeightVh: 0.65,
+        // use fraction of dynamic viewport (via calc(var(--dvh)*N)) and also absolute px cap
+        maxHeightVhPct: 65, // percent (65vh)
         maxHeightPxCap: 650,
         padMinRem: 0.8,
         padMaxRem: 1.6,
         widthVw: 70
       };
     } else if (vw >= 641) {
-      // Tablet: recommended max ~60vh
       return {
-        maxHeightVh: 0.60,
+        maxHeightVhPct: 60,
         maxHeightPxCap: Math.round(vh * 0.9),
         padMinRem: 0.7,
         padMaxRem: 1.2,
         widthVw: 82
       };
     } else {
-      // Mobile: recommended max ~95vh
       return {
-        maxHeightVh: 0.95,
+        maxHeightVhPct: 95,
         maxHeightPxCap: Math.round(vh * 0.95),
         padMinRem: 0.5,
         padMaxRem: 1.0,
@@ -103,44 +126,40 @@
     return mapping[stepName] || 0.8;
   }
 
-  function remToPx(rem) {
-    var rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    return rem * rootFs;
-  }
-
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
-  // Apply padding (top/bottom) and set max-height only — do not enforce minimum heights
+  // Apply padding top/bottom (rem) and set iframe max-height using dynamic viewport (--dvh) + px cap fallback
   function applyPaddingAndMaxHeight(stepName, maxSeats) {
     if (!iframe || !card) return;
     var cfg = breakpointConfig();
-    var vh = window.innerHeight || document.documentElement.clientHeight;
 
-    // determine padding rem and clamp
+    // determine padding rem and clamp to breakpoint min/max
     var pref = preferredPaddingRem(stepName || '');
     var padRem = clamp(pref, cfg.padMinRem, cfg.padMaxRem);
-    var padHRem = Math.max(0.6, padRem * 0.6); // horizontal padding smaller
+    var padHRem = Math.max(0.6, padRem * 0.6);
 
-    // apply vertical padding prominently (top + bottom)
+    // apply padding (vertical strong, horizontal smaller)
     card.style.paddingTop = padRem + 'rem';
     card.style.paddingBottom = padRem + 'rem';
-    // keep left/right reasonable
     card.style.paddingLeft = padHRem + 'rem';
     card.style.paddingRight = padHRem + 'rem';
 
-    // set card width target (relative) — CSS max-width still applies
+    // width target (in vw) — CSS max-width still enforces caps
     card.style.width = cfg.widthVw + 'vw';
 
-    // set iframe max-height (px) computed from vh * config but not exceeding px cap
-    var maxH_fromVh = Math.round(vh * cfg.maxHeightVh);
-    var maxH_px = Math.min(maxH_fromVh, cfg.maxHeightPxCap);
-    iframe.style.maxHeight = maxH_px + 'px';
-    // also set max-height in vh (helps on resize)
-    iframe.style.setProperty('max-height', Math.round(cfg.maxHeightVh * 100) + 'vh');
+    // compute CSS expression for dynamic-vh-based cap (uses --dvh set by updateDvh)
+    var vhPct = cfg.maxHeightVhPct || cfg.maxHeightVhPct === 0 ? cfg.maxHeightVhPct : cfg.maxHeightVhPct;
+    // Note: cfg.maxHeightVhPct is percent number (e.g., 65 for 65vh)
+    // Use min(pxCap, calc(var(--dvh) * N))
+    var calcStr = 'calc(var(--dvh) * ' + (cfg.maxHeightVhPct || cfg.maxHeightVhPct === 0 ? cfg.maxHeightVhPct : 65) + ')';
+    var pxCap = cfg.maxHeightPxCap;
 
-    // do NOT set iframe.style.height or any minimum — let content determine natural height up to max
-    // ensure overflow is handled inside iframe if content larger than max (iframe will show its own scroll)
-    // (No min-height enforcement here)
+    // apply max-height using min() so browsers use dynamic calc when available, but never exceed pxCap
+    iframe.style.maxHeight = 'min(' + pxCap + 'px, ' + calcStr + ')';
+    // also set inline CSS property for fallback if needed
+    iframe.style.boxSizing = 'border-box';
+
+    // DO NOT set iframe.style.height or minimum heights; content decides height up to the max
     card.style.height = 'auto';
   }
 
@@ -182,7 +201,7 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // Do not set a fixed height. Let content size the iframe up to the max-height we set later.
+    // Do not force height; let content size up to max-height
     iframe.style.height = 'auto';
     iframe.style.boxSizing = 'border-box';
 
@@ -194,7 +213,7 @@
     };
     host.addEventListener('click', hostClickHandler);
 
-    // when iframe loads, request the active step so we can set padding & max-height
+    // request step after load so parent can set padding & dynamic max-height
     iframe.addEventListener('load', function () {
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) {}
       setTimeout(function(){ try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (err) {} }, 160);
@@ -265,6 +284,17 @@
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
+  // update dynamic viewport measure whenever page-level resizes occur
+  updateDvh(); // ensure it's set if file was reloaded
+  window.addEventListener('resize', updateDvh);
+  window.addEventListener('orientationchange', updateDvh);
+  if (window.visualViewport) {
+    try {
+      window.visualViewport.addEventListener('resize', updateDvh);
+      window.visualViewport.addEventListener('scroll', updateDvh);
+    } catch (_) {}
+  }
+
   // ESC closes overlay
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
@@ -277,5 +307,5 @@
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: initialized (padding-driven; max-height caps only)');
+  console.log('rsvp-overlay: initialized (uses dynamic viewport --dvh for max-height)');
 })();
