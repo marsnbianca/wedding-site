@@ -1,22 +1,27 @@
-// rsvp-overlay.js — modal iframe version using the inner script.googleusercontent.com URL
+// rsvp-overlay.js — modal iframe loader (loads GitHub Pages frontend)
 (function () {
-  // ********** REPLACED with the inner URL you provided **********
-  var RSVP_URL = "https://n-qwmf6vougjxh4aq5pssvewccq5224sxmappxwxi-0lu-script.googleusercontent.com/userCodeAppPanel";
-  var RSVP_ORIGIN = "https://marsnbianca.github.io";
+  // FRONTEND_URL: set to your GitHub Pages frontend (the RSVP UI hosted on GitHub Pages)
+  var FRONTEND_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- CHANGED: use your Pages frontend URL
+  var PARENT_ORIGIN = "https://marsnbianca.github.io";
 
-  if (!RSVP_URL || RSVP_URL.indexOf("script.googleusercontent.com") === -1) {
-    console.error("rsvp-overlay.js: RSVP_URL is not set to a script.googleusercontent.com URL.");
+  console.log("rsvp-overlay: starting. FRONTEND_URL=", FRONTEND_URL);
+
+  var host = document.getElementById("rsvpHostOverlay");
+  if (!host) {
+    host = document.createElement("div");
+    host.id = "rsvpHostOverlay";
+    document.body.appendChild(host);
+    console.log("rsvp-overlay: created host element");
+  } else {
+    console.log("rsvp-overlay: found existing host element");
   }
 
-  var host = document.createElement("div");
-  host.id = "rsvpHostOverlay";
   host.style.position = "fixed";
   host.style.inset = "0";
   host.style.zIndex = "999999";
-  host.style.background = "transparent";
   host.style.display = "none";
   host.style.pointerEvents = "none";
-  document.body.appendChild(host);
+  host.style.background = "transparent";
 
   var iframe = null;
   var lastFocus = null;
@@ -39,27 +44,57 @@
       try { e.stopPropagation(); } catch (_) {}
     }
 
-    lastFocus = document.activeElement;
+    try { lastFocus = document.activeElement; } catch (_) {}
 
     host.innerHTML = "";
     host.style.display = "block";
     host.style.pointerEvents = "auto";
     host.style.background = "rgba(0,0,0,0.35)";
 
+    // create iframe that loads GitHub Pages frontend
     iframe = document.createElement("iframe");
-    iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
+    iframe.src = FRONTEND_URL + (FRONTEND_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
     iframe.style.position = "absolute";
     iframe.style.inset = "0";
     iframe.style.width = "100%";
     iframe.style.height = "100%";
     iframe.style.border = "0";
     iframe.style.background = "transparent";
-    iframe.setAttribute("allowtransparency", "true");
     iframe.setAttribute("title", "RSVP");
 
+    // simple loader while iframe loads
+    var loader = document.createElement("div");
+    loader.textContent = "Loading RSVP...";
+    loader.style.position = "absolute";
+    loader.style.zIndex = "1000000";
+    loader.style.left = "50%";
+    loader.style.top = "50%";
+    loader.style.transform = "translate(-50%, -50%)";
+    loader.style.background = "#fff";
+    loader.style.padding = "12px 16px";
+    loader.style.borderRadius = "8px";
+    loader.style.boxShadow = "0 10px 30px rgba(0,0,0,0.12)";
+
+    host.appendChild(loader);
     host.appendChild(iframe);
+
     lockScroll(true);
-    console.log("rsvp-overlay: opened iframe ->", iframe.src);
+    console.log("rsvp-overlay: iframe inserted, src=", iframe.src);
+
+    var loaded = false;
+    iframe.onload = function () {
+      loaded = true;
+      console.log("rsvp-overlay: iframe onload fired — content loaded.");
+      try { loader.parentNode && loader.parentNode.removeChild(loader); } catch (_) {}
+    };
+
+    // fallback: if iframe doesn't load in 3s, open frontend in a new tab
+    setTimeout(function () {
+      if (!loaded) {
+        console.warn("rsvp-overlay: iframe did not load within timeout. Opening frontend in new tab as fallback.");
+        try { window.open(iframe.src, "_blank"); } catch (err) { console.error("rsvp-overlay: popup failed", err); }
+      }
+    }, 3000);
   }
 
   function closeRSVP() {
@@ -68,7 +103,6 @@
     host.style.pointerEvents = "none";
     host.style.background = "transparent";
     lockScroll(false);
-
     try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (_) {}
     lastFocus = null;
     iframe = null;
@@ -78,34 +112,37 @@
   document.addEventListener("click", function (e) {
     var t = e.target;
     var img = t.closest && t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"], [data-rsvp="open"]');
-    if (img) { openRSVP(e); return; }
+    if (img) { console.log("rsvp-overlay: image/button trigger"); openRSVP(e); return; }
 
     var el = t.closest && t.closest("a, button, div, span");
     if (el) {
       var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
-      if (txt === "rsvp") { openRSVP(e); return; }
+      if (txt === "rsvp") { console.log("rsvp-overlay: text trigger"); openRSVP(e); return; }
     }
   }, true);
 
   window.addEventListener("message", function (e) {
     if (!e) return;
-    // accept messages from your origin and from Google usercontent/script domains
-    if (e.origin !== RSVP_ORIGIN && !e.origin.startsWith("https://script.googleusercontent.com") && !e.origin.startsWith("https://script.google.com")) {
+    if (e.origin !== PARENT_ORIGIN && !e.origin.startsWith("https://marsnbianca.github.io") && !e.origin.startsWith("https://script.googleusercontent.com") && !e.origin.startsWith("https://script.google.com")) {
       console.warn("rsvp-overlay: ignoring message from origin", e.origin);
       return;
     }
-    if (e.data === "RSVP:CLOSE") closeRSVP();
+    if (e.data === "RSVP:CLOSE") {
+      console.log("rsvp-overlay: received RSVP:CLOSE — closing overlay");
+      closeRSVP();
+    }
   });
 
   window.addEventListener("keydown", function (e) {
     if (e && e.key === "Escape" && host.style.display === "block") closeRSVP();
   });
 
+  // debug helpers
   window.__rsvp = {
-    open: function () { openRSVP(); },
-    close: function () { closeRSVP(); },
-    info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay") }; }
+    open: openRSVP,
+    close: closeRSVP,
+    info: function () { return { FRONTEND_URL: FRONTEND_URL, iframeSrc: iframe ? iframe.src : null, hostVisible: host.style.display === "block" }; }
   };
 
-  console.log("rsvp-overlay: initialized. Use window.__rsvp.open() to open.");
+  console.log("rsvp-overlay: ready. Use window.__rsvp.open() to test.");
 })();
