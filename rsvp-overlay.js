@@ -1,15 +1,13 @@
-// name=rsvp-overlay.js
+// rsvp-overlay.js — place this file in the same folder as index.html in the wedding-site repo
 (function () {
-  // Replace with your Apps Script web app exec URL (deploy → Web app → copy exec URL)
+  // Replace with your Apps Script web app exec URL if you ever redeploy; this should be the exec URL.
   var RSVP_URL = "https://script.google.com/macros/s/AKfycbzdV48pD-cQn5O_lNhnqh1ijjaTbyMG0IIAu2HAWLe2BXxBAWfpTl2Evc1w2S6uX3VP/exec";
-  var RSVP_ORIGIN = "https://marsnbianca.github.io"; // parent site origin (used for message checks)
+  var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
-  // Basic sanity check
   if (!RSVP_URL || RSVP_URL.indexOf("script.google.com") === -1) {
     console.error("rsvp-overlay.js: RSVP_URL not set or invalid. Please set RSVP_URL to your Apps Script web app exec URL.");
   }
 
-  // Create host overlay container if not present
   var host = document.getElementById("rsvpHostOverlay");
   if (!host) {
     host = document.createElement("div");
@@ -83,11 +81,9 @@
     console.log("rsvp-overlay: closed");
   }
 
-  // Event delegation click handler (fallback)
   function onDocumentClick(e) {
     var t = e.target;
     try {
-      // 1) explicit attributes on image/button
       var img = (t.closest && (t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"], [data-rsvp="open"]')));
       if (img) {
         console.log("rsvp-overlay: trigger from delegated click (attr)");
@@ -95,7 +91,6 @@
         return;
       }
 
-      // 2) direct element matches (text fallback)
       var el = (t.closest && t.closest("a, button, div, span"));
       if (el) {
         var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
@@ -110,10 +105,8 @@
     }
   }
 
-  // Attach delegated listener
   document.addEventListener("click", onDocumentClick, true);
 
-  // Also attach direct listeners to common trigger elements (class .rsvp-btn, [data-rsvp], images with attributes)
   function attachDirectHandlers() {
     var selectors = [
       ".rsvp-btn",
@@ -126,7 +119,6 @@
     var nodes = document.querySelectorAll(selectors.join(","));
     for (var i = 0; i < nodes.length; i++) {
       (function (node) {
-        // avoid adding multiple listeners
         if (node.__rsvpAttached) return;
         node.addEventListener("click", function (ev) {
           console.log("rsvp-overlay: trigger from direct click on", node);
@@ -138,33 +130,27 @@
     console.log("rsvp-overlay: attached direct handlers to", nodes.length, "elements");
   }
 
-  // Run once now and also on DOMContentLoaded to catch late elements
   try { attachDirectHandlers(); } catch (_) {}
   document.addEventListener("DOMContentLoaded", attachDirectHandlers);
 
-  // Listen for close messages from iframe
   window.addEventListener("message", function (e) {
     if (!e) return;
-    // accept messages from the parent host origin and from Apps Script
     try {
       if (e.origin !== RSVP_ORIGIN && !e.origin.startsWith("https://script.google.com") && !e.origin.startsWith("https://script.googleusercontent.com")) {
-        // ignore unknown origins
         console.warn("rsvp-overlay: ignoring message from origin", e.origin);
         return;
       }
-    } catch (_) { /* ignore */ }
+    } catch (_) {}
 
     if (e.data === "RSVP:CLOSE") {
       closeRSVP();
     }
   });
 
-  // Escape closes overlay
   window.addEventListener("keydown", function (e) {
     if (e && e.key === "Escape" && host.style.display === "block") closeRSVP();
   });
 
-  // Debug helpers available from the console
   window.__rsvp = {
     open: function () { openRSVP(); },
     close: function () { closeRSVP(); },
