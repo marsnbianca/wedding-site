@@ -2,22 +2,21 @@
 // Path: wedding-site/rsvp-overlay.js
 // Include from your wedding-site index.html: <script src="rsvp-overlay.js"></script>
 //
-// Behavior implemented here (per your request):
-// - Apply ONLY height recommendations (min/max) per device breakpoint.
-// - Modal/iframe will grow/shrink with content when possible; if the child reports its content height (RSVP:HEIGHT)
-//   the parent will use that but clamp it to the device max. If the child doesn't report height the iframe is left
-//   'auto' and CSS min/max take effect (internal iframe scroll will occur if content exceeds max).
-// - Uses svh / vh units for mobile/desktop caps as in your guide.
-// - Adds a small smooth transition and a DEBUG flag you can toggle: window.__rsvp.setDebug(true).
+// Behavior implemented:
+// - Parent sizes modal by step-based padding and by using the child-reported content height (RSVP:HEIGHT).
+// - NO internal iframe scrollbars: iframe overflow is hidden; when content is taller than recommended max the overlay
+//   itself becomes scrollable (top-aligned modal) so user scrolls the overlay, not the iframe.
+// - Min height is driven by content (child-reported) + small base; padding is applied in rem (relative).
+// - Smooth transitions and a DEBUG flag for message flow testing.
 
 (function () {
-  var DEBUG = false;
+  var DEBUG = false; // toggle with window.__rsvp.setDebug(true)
   function log() { if (DEBUG) console.log.apply(console, arguments); }
 
-  var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- replace if needed
+  var RSVP_URL = "https://marsnbianca.github.io/rsvp-tool/"; // <-- REPLACE with your frontend Pages URL
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
-  // ensure host exists
+  // Ensure host exists
   var host = document.getElementById("rsvpHostOverlay");
   if (!host) {
     host = document.createElement("div");
@@ -30,29 +29,24 @@
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:1rem; box-sizing:border-box; }",
 
-      /* Card and iframe base styles */
+      /* Modal card: transitions for padding/transform/width */
       ".rsvp-modal-card{ position:relative; width:auto; max-width:96vw; box-sizing:border-box; background:#fff; border-radius:0.75rem; overflow:visible;",
-      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition: transform .22s ease, padding .18s ease, width .18s ease, opacity .12s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
+      " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition: transform .22s cubic-bezier(.2,.9,.2,1), padding .18s ease, width .18s ease, opacity .12s ease; padding: clamp(0.4rem, 1.6vw, 1rem); }",
 
-      /* Iframe: allow it to size with content; enforce min/max heights per breakpoints (your guide rules) */
+      /* Iframe: will be sized by parent to child content height. Hide overflow to avoid internal scrollbars */
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box;",
-      " height:auto; transition: max-height .18s ease, height .18s ease; }",
+      " transition: height .16s ease, max-height .16s ease; overflow:hidden; }",
 
-      /* MOBILE (default) — small devices */
+      /* Height recommendations from your guide (mobile-first) */
       ".rsvp-modal-card .rsvp-modal-iframe{ min-height:20svh; max-height:85svh; }",
-
-      /* Tablet */
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card .rsvp-modal-iframe{ min-height:300px; max-height:80svh; } }",
-
-      /* Desktop */
       "@media (min-width:1008px){ .rsvp-modal-card .rsvp-modal-iframe{ min-height:400px; max-height:70vh; } }",
 
-      /* Card size caps (keeping width as you asked earlier) */
+      /* Width caps restored to approved setting (desktop 60vw capped at 50rem) */
       "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(90vw, 26rem); } }",
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:76vw; } }",
-      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(60vw, 50rem); min-width:36rem; } }",
+      "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(60vw, 50rem); } }",
 
-      /* Close button */
       ".rsvp-modal-close{ position:absolute; right:0.6rem; top:0.6rem; z-index:10; background:rgba(255,255,255,0.95); border:0;",
       " width:2.25rem; height:2.25rem; border-radius:0.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center;",
       " box-shadow:0 0.3rem 1rem rgba(0,0,0,0.12); }"
@@ -64,6 +58,7 @@
 
   function lockScroll(lock) {
     if (lock) {
+      // Prevent page behind modal from scrolling; overlay may scroll when needed
       document.documentElement.style.overflow = 'hidden';
       document.body.style.overflow = 'hidden';
       document.body.style.touchAction = 'none';
@@ -74,20 +69,103 @@
     }
   }
 
-  // breakpoint caps used when we clamp a child-reported height (in px)
-  function getRecommendedMaxPx() {
+  // Breakpoint-based recommended max heights (returns px)
+  function recommendedMaxPx() {
     var vw = window.innerWidth || document.documentElement.clientWidth;
     var vh = window.innerHeight || document.documentElement.clientHeight;
     if (vw >= 1008) {
-      // desktop uses vh static
-      return Math.min(Math.round(vh * 0.70), 9999); // max 70vh (no lower px cap here; keep large)
+      return Math.round(vh * 0.70); // 70vh desktop
     }
     if (vw >= 641) {
-      // tablet: 80svh — interpret using vh as fallback
-      return Math.round(vh * 0.80);
+      // use svh values where available; fallback to vh
+      return Math.round(vh * 0.80); // ~80svh/tablet
     }
-    // mobile: 85svh (use vh fallback)
-    return Math.round(vh * 0.85);
+    return Math.round(vh * 0.85); // 85svh mobile
+  }
+
+  // Step -> padding mapping (rem)
+  function paddingForStep(stepName) {
+    var map = {
+      search: 0.6,
+      matches: 0.7,
+      notInList: 0.6,
+      attendance: 1.0,
+      transport: 0.8,
+      phone: 0.7,
+      notes: 0.7,
+      review: 0.8,
+      thanks: 0.6
+    };
+    return (map[stepName] || 0.8);
+  }
+
+  // Convert rem to px
+  function remToPx(rem) {
+    var rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    return rem * rootFs;
+  }
+
+  // Apply padding top/bottom on card using rem (relative units)
+  function applyPadding(stepName) {
+    if (!card) return;
+    var pr = paddingForStep(stepName);
+    var horiz = Math.max(0.45, pr * 0.6);
+    card.style.paddingTop = pr + 'rem';
+    card.style.paddingBottom = pr + 'rem';
+    card.style.paddingLeft = horiz + 'rem';
+    card.style.paddingRight = horiz + 'rem';
+  }
+
+  // When child reports height, set iframe height to reported height (remove internal scroll)
+  // If content > recommended max, keep iframe at full content height and let overlay scroll (top align).
+  // If content <= recommended max, center modal and hide overlay scroll.
+  function setIframeToContentHeight(childHeight, stepName) {
+    if (!iframe || !card || !host) return;
+    var h = parseInt(childHeight, 10) || 0;
+    if (!h) return;
+
+    applyPadding(stepName);
+
+    var max = recommendedMaxPx();
+
+    // Always set iframe to full content height so iframe will not show its own scrollbars
+    iframe.style.height = h + 'px';
+    iframe.style.overflow = 'hidden';
+
+    if (h <= max) {
+      // content fits: center modal, hide overlay scrollbar
+      host.style.alignItems = 'center';
+      host.style.overflow = 'hidden';
+      card.style.marginTop = '';
+      card.style.marginBottom = '';
+    } else {
+      // content taller than recommended max: top-align modal, allow overlay scroll
+      host.style.alignItems = 'flex-start';
+      host.style.overflow = 'auto';
+      card.style.marginTop = '1.5rem';
+      card.style.marginBottom = '1.5rem';
+    }
+
+    // enforce an accessible visual max-height (so CSS-aware things still see a cap)
+    // but we keep iframe height = content height; overlay scroll handles excess content.
+    iframe.style.maxHeight = Math.max(h, max) + 'px';
+    card.style.width = ''; // keep CSS width rules (not overriding)
+    log('setIframeToContentHeight', h, 'max', max, 'step', stepName);
+  }
+
+  // When child doesn't report height, just apply padding and let CSS min/max apply.
+  // In that case iframe keeps internal scrolling (we cannot avoid it cross-origin).
+  function applyStepFallback(stepName) {
+    if (!iframe || !card) return;
+    applyPadding(stepName);
+    iframe.style.height = 'auto';
+    iframe.style.overflow = 'auto';
+    iframe.style.maxHeight = ''; // CSS media rules control max-height
+    host.style.alignItems = 'center';
+    host.style.overflow = 'hidden';
+    card.style.marginTop = '';
+    card.style.marginBottom = '';
+    log('applyStepFallback', stepName);
   }
 
   function createTopClose() {
@@ -101,9 +179,9 @@
 
   function openRSVP(e) {
     if (e && typeof e.preventDefault === "function") { e.preventDefault(); try { e.stopPropagation(); } catch (_) {} }
+
     lastFocus = document.activeElement;
 
-    // clear host
     host.innerHTML = '';
     host.style.display = 'flex';
     host.style.pointerEvents = 'auto';
@@ -122,11 +200,11 @@
     iframe.className = 'rsvp-modal-iframe';
     iframe.setAttribute('title', 'RSVP');
     iframe.setAttribute('allowtransparency', 'true');
-    // keep iframe scrolling allowed — internal scrolling will happen only if content > max-height
-    iframe.setAttribute('scrolling', 'auto');
+    // remove internal scrollbars where possible; parent will size iframe to content when child supplies height
+    iframe.setAttribute('scrolling', 'no');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // leave height:auto so iframe grows with content where possible (cross-origin limit)
+    // leave height auto until child reports
     iframe.style.height = 'auto';
     iframe.style.boxSizing = 'border-box';
 
@@ -138,10 +216,9 @@
     };
     host.addEventListener('click', hostClickHandler);
 
-    // On load, request the active step (so parent can apply any step-driven padding if you still need it)
+    // Ask child for both step and height after load
     iframe.addEventListener('load', function () {
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {}
-      // request child height if it can provide it
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
       setTimeout(function () {
         try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
@@ -168,95 +245,40 @@
     console.info('rsvp-overlay: closed');
   }
 
-  // If child posts height we will use it, but clamp to recommended max.
-  function onChildHeightReported(h, stepName) {
-    if (!iframe || !card || !host) return;
-    var reported = parseInt(h, 10) || 0;
-    if (!reported) return;
-    var recommendedMax = getRecommendedMaxPx();
-
-    // clamp reported height
-    var finalH = Math.min(reported, recommendedMax);
-
-    // Apply to iframe: set explicit height so internal scroll is removed when possible
-    iframe.style.height = finalH + 'px';
-    iframe.style.maxHeight = Math.max(finalH, recommendedMax) + 'px'; // keep max-height sensible
-
-    // center if it fits, otherwise allow overlay scroll (top-align)
-    if (reported <= recommendedMax) {
-      host.style.alignItems = 'center';
-      host.style.overflow = 'hidden';
-      card.style.marginTop = '';
-      card.style.marginBottom = '';
-    } else {
-      host.style.alignItems = 'flex-start';
-      host.style.overflow = 'auto';
-      card.style.marginTop = '1.5rem';
-      card.style.marginBottom = '1.5rem';
-    }
-    log('onChildHeightReported', reported, 'clamped->', finalH, 'recommendedMax', recommendedMax, 'step', stepName);
-  }
-
-  // fallback: apply only height recommendations via CSS (no child height)
-  function applyCssHeightRecommendations(stepName) {
-    if (!iframe || !card) return;
-    // CSS already defines min/max via media queries. We can optionally nudge padding per step here.
-    log('applyCssHeightRecommendations for step', stepName);
-    // keep iframe height auto and CSS min/max will apply
-    iframe.style.height = 'auto';
-    iframe.style.overflowY = 'auto';
-    host.style.alignItems = 'center';
-    host.style.overflow = 'hidden';
-    card.style.marginTop = '';
-    card.style.marginBottom = '';
-  }
-
-  // delegated opener (supports <img alt="openRSVP"> and .rsvp-btn)
-  document.addEventListener('click', function (e) {
-    var t = e.target;
-    try {
-      var opener = t.closest && (t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"], [data-rsvp="open"], .rsvp-btn'));
-      if (opener) { openRSVP(e); return; }
-      var el = t.closest && t.closest("a, button, div, span");
-      if (el) {
-        var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
-        if (txt === "rsvp") { openRSVP(e); return; }
-      }
-    } catch (_) {}
-  }, true);
-
-  // Message listener: handle child messages (RSVP:HEIGHT and RSVP:STEP)
+  // messages from child
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
       if (typeof e.origin === 'string') {
-        var ok = (e.origin === RSVP_ORIGIN) || e.origin.startsWith("https://script.googleusercontent.com") || e.origin.startsWith("https://script.google.com") || e.origin.startsWith(RSVP_URL);
-        if (!ok) { log('ignoring message from', e.origin); return; }
+        var ok = (e.origin === RSVP_ORIGIN) || e.origin.startsWith(RSVP_URL) || e.origin.startsWith("https://script.googleusercontent.com") || e.origin.startsWith("https://script.google.com");
+        if (!ok) { log('ignoring origin', e.origin); return; }
       }
-    } catch (_) { log('message origin check failed'); }
+    } catch (_) { log('origin check error'); }
 
     var data = e.data;
     if (!data) return;
-    log('parent received message', data && data.type ? data.type : data);
+    log('parent received', data && data.type ? data.type : data);
 
     if (typeof data === 'object' && data.type) {
       if (data.type === 'RSVP:HEIGHT') {
-        // child reports content height in px
         if (data.height) {
-          onChildHeightReported(data.height, data.step || '');
-          return;
+          // child reported its content height (px)
+          setIframeToContentHeight(data.height, data.step || '');
         }
-      }
-      if (data.type === 'RSVP:STEP') {
-        // only step name -> apply CSS height recommendations (no height)
-        applyCssHeightRecommendations(data.step || '');
         return;
       }
-      if (data.type === 'RSVP:CLOSE') { closeRSVP(); return; }
+      if (data.type === 'RSVP:STEP') {
+        // child only told current step (no height). Apply padding and let CSS min/max control heights.
+        applyStepFallback(data.step || '');
+        return;
+      }
       if (data.type === 'RSVP:HAS_BOTTOM_CLOSE') {
-        // show/hide top close depending on child
         if (!topCloseBtn) createTopClose();
         topCloseBtn.style.display = data.hasBottomClose ? 'none' : '';
+        return;
+      }
+      if (data.type === 'RSVP:CLOSE') {
+        closeRSVP();
         return;
       }
     }
@@ -264,12 +286,12 @@
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
-  // Escape closes
+  // ESC closes overlay
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // expose debug toggle and API
+  // Expose API including debug toggle
   window.__rsvp = {
     open: openRSVP,
     close: closeRSVP,
@@ -277,5 +299,5 @@
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: initialized (height recommendations applied: min/max per device; responsive to child height when provided)');
+  console.log('rsvp-overlay: initialized (no internal scroll; height follows child content when reported; padding is rem-based)');
 })();
