@@ -17,7 +17,7 @@
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:1rem; box-sizing:border-box; }",
 
-      /* card base: padding responsive via JS, transitions for width/padding */
+      /* card base: transitions for width/padding/height */
       ".rsvp-modal-card{ position:relative; width:auto; max-width:96vw; box-sizing:border-box; background:#fff; border-radius:0.75rem; overflow:visible;",
       " box-shadow:0 1rem 3rem rgba(0,0,0,0.22); transition:transform .18s ease,opacity .12s ease, width .18s ease, padding .18s ease; padding: clamp(0.5rem, 2vw, 1rem); }",
 
@@ -25,7 +25,7 @@
       "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(90vw, 22.5rem); } }",
       /* Tablet */
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:76vw; } }",
-      /* Desktop: explicit 50vw max as requested (but also cap at a rem-based maximum) */
+      /* Desktop: explicit 50vw max and cap at 50rem */
       "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(50vw, 50rem); } }",
 
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box; }",
@@ -38,7 +38,6 @@
   }
 
   var iframe = null, card = null, lastFocus = null, hostClickHandler = null, topCloseBtn = null;
-  var sizeRequestTimer = null;
 
   function lockScroll(lock) {
     if (lock) {
@@ -52,17 +51,43 @@
     }
   }
 
-  // Breakpoint-based max heights (relative units)
-  function breakpointMaxHeight() {
+  // Breakpoint-based caps (px)
+  function breakpointCaps() {
     var w = window.innerWidth || document.documentElement.clientWidth;
-    if (w >= 1008) return Math.round(window.innerHeight * 0.60); // desktop: 60vh
-    if (w >= 641) return Math.round(window.innerHeight * 0.55);  // tablet: 55vh
-    return Math.round(window.innerHeight * 0.75);                // mobile: 75vh
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var caps = {};
+    // heights caps: recommended by you
+    if (w >= 1008) {
+      caps.maxHeightPx = Math.min(650, Math.round(vh * 0.65)); // desktop cap ~650px or 65vh
+      caps.widthCap = Math.min(Math.round(w * 0.5), 50 * parseFloat(getComputedStyle(document.documentElement).fontSize)); // 50vw capped by 50rem
+    } else if (w >= 641) {
+      caps.maxHeightPx = Math.round(vh * 0.55); // tablet ~55vh
+      caps.widthCap = Math.round(w * 0.76); // 76vw
+    } else {
+      caps.maxHeightPx = Math.round(vh * 0.75); // mobile ~75vh
+      caps.widthCap = Math.round(w * 0.90); // 90vw
+    }
+    caps.vh = vh;
+    caps.vw = w;
+    return caps;
   }
 
-  // Padding mapping by step (rem)
+  // Step -> target fraction of viewport height (desktop baseline)
+  const desktopStepVH = {
+    search: 0.30,
+    matches: 0.35,
+    attendance_single: 0.30,
+    attendance_multi: 0.50,
+    transport: 0.30,
+    phone: 0.28,
+    notes: 0.28,
+    review: 0.35,
+    thanks: 0.28
+  };
+
+  // Padding mapping per step (rem strings)
   function paddingForStep(stepName) {
-    var mapping = {
+    const mapping = {
       search: '0.6rem',
       matches: '0.7rem',
       notInList: '0.6rem',
@@ -76,70 +101,71 @@
     return mapping[stepName] || '0.8rem';
   }
 
-  // Apply sizes from child-sent data object {width, height, step}
-  function applySizeFromChild(data) {
+  // Convert rem to px
+  function remToPx(remStr) {
+    if (!remStr || typeof remStr !== 'string') return 0;
+    var m = remStr.match(/^([\d.]+)rem$/);
+    if (!m) return 0;
+    var rem = parseFloat(m[1]);
+    var rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    return rem * rootFontSize;
+  }
+
+  // Apply sizing using only the step name (and optional maxSeats)
+  function sizeForStep(stepName, maxSeats) {
     if (!iframe || !card) return;
-    var vw = window.innerWidth || document.documentElement.clientWidth;
-    var vh = window.innerHeight || document.documentElement.clientHeight;
-    var maxH = breakpointMaxHeight();
-    var minH = Math.max(120, Math.round(vh * 0.12)); // min 12vh or 120px
+    var caps = breakpointCaps();
+    var vh = caps.vh, vw = caps.vw, maxH = caps.maxHeightPx;
 
-    // HEIGHT
-    var childH = parseInt(data.height, 10) || 0;
-    var finalH = Math.min(Math.max(childH, minH), maxH);
-    iframe.style.height = finalH + 'px';
-    iframe.style.maxHeight = maxH + 'px';
-
-    // WIDTH: use child's width to compute a vw percentage, but clamp by breakpoint ranges
-    var childW = parseInt(data.width, 10) || 0;
-    var contentVw = childW && vw ? (childW / vw) * 100 : null;
-    var finalVw;
-    if (contentVw === null) {
-      // fallback: use CSS max-width; set width:auto so CSS controls it
-      card.style.width = 'auto';
+    // determine desktop baseline fraction
+    var fraction;
+    if (stepName === 'attendance') {
+      fraction = (maxSeats && maxSeats > 1) ? desktopStepVH.attendance_multi : desktopStepVH.attendance_single;
     } else {
-      if (vw >= 1008) {
-        finalVw = Math.min(Math.max(contentVw, 30), 50); // desktop: 30-50vw
-      } else if (vw >= 641) {
-        finalVw = Math.min(Math.max(contentVw, 50), 76); // tablet: 50-76vw
-      } else {
-        finalVw = Math.min(Math.max(contentVw, 75), 90); // mobile: 75-90vw
-      }
-      card.style.width = finalVw + 'vw';
+      fraction = desktopStepVH[stepName] || desktopStepVH.search;
     }
 
-    // Padding based on step
-    var pad = paddingForStep(data.step || '');
-    card.style.padding = pad;
+    // scale by breakpoint
+    if (vw >= 1008) {
+      // desktop: use fraction as-is
+    } else if (vw >= 641) {
+      // tablet: slightly smaller fraction (90% of desktop)
+      fraction = Math.min(0.9, fraction * 0.9);
+    } else {
+      // mobile: allow content to be a bit taller but cap by mobile rule below
+      fraction = Math.min(0.9, fraction * 1.0);
+    }
 
-    // Keep card height auto
-    card.style.height = 'auto';
-  }
+    // compute desired height in px
+    var desiredH = Math.round(vh * fraction);
 
-  function setHeightsFromReported(childHeight) {
-    if (!iframe || !card) return;
-    var maxH = breakpointMaxHeight();
-    var minH = Math.max(120, Math.round(window.innerHeight * 0.12));
-    var h = parseInt(childHeight, 10) || 0;
-    var finalH = Math.min(Math.max(h, minH), maxH);
+    // compute min height based on padding and a small base content (rem-based)
+    var pad = paddingForStep(stepName || '');
+    var padPx = remToPx(pad);
+    var baseContentRem = 5.5; // base content area in rem (approx)
+    var rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    var baseContentPx = baseContentRem * rootFs;
+    var minH = Math.round(baseContentPx + padPx * 2);
+    minH = Math.max(minH, Math.round(vh * 0.12), 120);
+
+    // Apply final height = clamp(desiredH, minH, maxH)
+    var finalH = Math.min(Math.max(desiredH, minH), maxH);
     iframe.style.height = finalH + 'px';
     iframe.style.maxHeight = maxH + 'px';
+
+    // Width: pick relative vw constrained to CSS max-width
+    var finalVw;
+    if (vw >= 1008) finalVw = 50;         // desktop target 50vw
+    else if (vw >= 641) finalVw = 76;     // tablet
+    else finalVw = 90;                    // mobile
+    card.style.width = finalVw + 'vw';
+
+    // Padding
+    card.style.padding = pad;
+
+    // ensure height/width change applied
     card.style.height = 'auto';
   }
-
-  function requestChildSize() {
-    if (!iframe || !iframe.contentWindow) return;
-    try {
-      iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_SIZE' }, '*');
-    } catch (_) {}
-  }
-
-  // debounce size requests to child on resize
-  function onResize() {
-    if (sizeRequestTimer) clearTimeout(sizeRequestTimer);
-    sizeRequestTimer = setTimeout(function() { requestChildSize(); }, 120);
-  }
-  window.addEventListener('resize', onResize);
 
   function createTopClose() {
     if (topCloseBtn) return;
@@ -174,9 +200,9 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // modest initial height
+    // initial modest height until child sends step
     iframe.style.height = Math.round(window.innerHeight * 0.32) + 'px';
-    iframe.style.maxHeight = Math.round(window.innerHeight * 0.60) + 'px';
+    iframe.style.maxHeight = Math.round(window.innerHeight * 0.65) + 'px';
     iframe.style.boxSizing = 'border-box';
 
     card.appendChild(iframe);
@@ -187,21 +213,10 @@
     };
     host.addEventListener('click', hostClickHandler);
 
-    // On iframe load, request size and also attempt same-origin measure
+    // request the child step shortly after load
     iframe.addEventListener('load', function () {
-      try {
-        var doc = iframe.contentDocument || iframe.contentWindow.document;
-        if (doc) {
-          var h = Math.max(doc.documentElement.scrollHeight || 0, (doc.body && doc.body.scrollHeight) || 0);
-          var w = Math.max(doc.documentElement.scrollWidth || 0, (doc.body && doc.body.scrollWidth) || 0);
-          if (h || w) applySizeFromChild({ width: w, height: h, step: '' });
-        }
-      } catch (err) { /* cross-origin possible */ }
-      // ask child for its measured size (child will respond with RSVP:SIZE)
-      requestChildSize();
-      // also request again shortly to handle transitions
-      setTimeout(requestChildSize, 160);
-      setTimeout(requestChildSize, 400);
+      try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {}
+      setTimeout(function(){ try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {} }, 160);
     });
 
     lockScroll(true);
@@ -224,28 +239,7 @@
     console.log('rsvp-overlay: closed');
   }
 
-  function setTopCloseVisible(visible) {
-    if (!topCloseBtn) return;
-    topCloseBtn.style.display = visible ? '' : 'none';
-  }
-
-  // Delegated open
-  document.addEventListener('click', function (e) {
-    var t = e.target;
-    try {
-      var img = t.closest && t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"], [data-rsvp="open"]');
-      if (img) { openRSVP(e); return; }
-    } catch (_) {}
-    try {
-      var el = t.closest && t.closest("a, button, div, span");
-      if (el) {
-        var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
-        if (txt === "rsvp") { openRSVP(e); return; }
-      }
-    } catch (_) {}
-  }, true);
-
-  // Messages from iframe (child)
+  // handle messages from child — only listen for step notifications
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
@@ -257,36 +251,39 @@
 
     var data = e.data;
     if (!data) return;
-
     if (typeof data === 'object' && data.type) {
-      if (data.type === 'RSVP:SIZE') {
-        // { type:'RSVP:SIZE', width, height, step }
-        applySizeFromChild({ width: data.width || 0, height: data.height || 0, step: data.step || '' });
+      if (data.type === 'RSVP:STEP') {
+        // child says which step is active; parent sizes accordingly
+        var step = data.step || 'search';
+        var maxSeats = parseInt(data.maxSeats || 1, 10) || 1;
+        sizeForStep(step, maxSeats);
+        // hide top X if child indicates bottom-close (legacy)
+        if (typeof data.hasBottomClose !== 'undefined') setTopCloseVisible(!data.hasBottomClose);
         return;
       }
-      if (data.type === 'RSVP:HEIGHT') {
-        if (data.height) setHeightsFromReported(data.height);
-        return;
-      }
-      if (data.type === 'RSVP:CLOSE') { closeRSVP(); return; }
       if (data.type === 'RSVP:HAS_BOTTOM_CLOSE') {
         setTopCloseVisible(!data.hasBottomClose);
         return;
       }
+      if (data.type === 'RSVP:CLOSE') {
+        closeRSVP();
+        return;
+      }
     }
-
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
-  // respond to Escape
+  // escape closes
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
+  // create top close upfront
   createTopClose();
   setTopCloseVisible(true);
 
+  // expose helper
   window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
 
-  console.log('rsvp-overlay: responsive modal initialized (content-dependent width/height)');
+  console.log('rsvp-overlay: initialized (step-driven sizing, desktop 50vw cap)');
 })();
