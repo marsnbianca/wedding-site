@@ -17,10 +17,10 @@
       "#rsvpHostOverlay{ position:fixed; inset:0; z-index:999999; display:none; align-items:center; justify-content:center;",
       " background: rgba(0,0,0,0.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding:18px; box-sizing:border-box; }",
       ".rsvp-modal-card{ position:relative; width:100%; max-width:820px; background:#fff; border-radius:14px; overflow:visible;",
-      " box-shadow:0 18px 50px rgba(0,0,0,0.32); max-height:90vh; transition:transform .18s ease,opacity .12s ease; padding:0; }",
-      "@media (max-width:1100px){ .rsvp-modal-card{ max-width:760px; } }",
-      "@media (max-width:820px){ .rsvp-modal-card{ max-width:640px; } }",
-      "@media (max-width:640px){ #rsvpHostOverlay{ padding:12px; } .rsvp-modal-card{ max-width:96%; border-radius:12px; } }",
+      " box-shadow:0 18px 50px rgba(0,0,0,0.32); transition:transform .18s ease,opacity .12s ease; padding:0; }",
+      "@media (max-width:1200px){ .rsvp-modal-card{ max-width:760px; } }",
+      "@media (max-width:900px){ .rsvp-modal-card{ max-width:640px; } }",
+      "@media (max-width:600px){ #rsvpHostOverlay{ padding:12px; } .rsvp-modal-card{ max-width:96%; border-radius:12px; } }",
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; }"
     ].join('');
     document.head.appendChild(style);
@@ -40,14 +40,13 @@
     }
   }
 
-  // Determine breakpoint-specific max modal heights
+  // breakpoint-specific max modal heights
   function breakpointMaxHeight() {
     var w = window.innerWidth || document.documentElement.clientWidth;
-    if (w >= 1200) return 720;      // Desktop
-    if (w >= 900) return 640;       // Large tablet / small desktop
-    if (w >= 600) return 560;       // Tablet
-    // mobile
-    return Math.floor(window.innerHeight * 0.8); // 80vh on small devices
+    if (w >= 1200) return 720;
+    if (w >= 900) return 640;
+    if (w >= 600) return 560;
+    return Math.floor(window.innerHeight * 0.8);
   }
 
   // Set iframe height to child content height, capped by breakpoint
@@ -55,13 +54,9 @@
     if (!iframe || !card) return;
     var maxH = breakpointMaxHeight();
     var h = parseInt(childHeight, 10) || 0;
-    if (isNaN(h) || h <= 0) {
-      iframe.style.height = Math.min(maxH, 520) + 'px';
-      return;
-    }
-    var finalH = Math.min(h, maxH);
-    finalH = Math.max(finalH, 300); // sensible min
+    var finalH = Math.min(Math.max(h, 300), maxH);
     iframe.style.height = finalH + 'px';
+    iframe.style.maxHeight = Math.max(finalH, maxH) + 'px';
     card.style.height = 'auto';
   }
 
@@ -89,7 +84,6 @@
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // initial reasonable height while content loads
     iframe.style.height = Math.min(breakpointMaxHeight(), 700) + 'px';
 
     card.appendChild(iframe);
@@ -107,7 +101,7 @@
           var h = Math.max(doc.documentElement.scrollHeight || 0, (doc.body && doc.body.scrollHeight) || 0);
           if (h) setHeights(h);
         }
-      } catch (err) { /* cross-origin - ignore */ }
+      } catch (err) {}
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
     });
 
@@ -120,12 +114,10 @@
       try { host.removeEventListener('click', hostClickHandler); } catch (_) {}
       hostClickHandler = null;
     }
-
     host.innerHTML = '';
     host.style.display = 'none';
     host.style.pointerEvents = 'none';
     lockScroll(false);
-
     try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (_) {}
     lastFocus = null;
     iframe = null;
@@ -133,7 +125,6 @@
     console.log('rsvp-overlay: closed');
   }
 
-  // Delegated open
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
@@ -149,7 +140,6 @@
     } catch (_) {}
   }, true);
 
-  // Messages from iframe
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
@@ -158,23 +148,14 @@
         if (!ok) { console.warn('rsvp-overlay: ignoring message from origin', e.origin); return; }
       }
     } catch (_) {}
-
     var data = e.data;
     if (data && typeof data === 'object' && data.type) {
-      if (data.type === 'RSVP:HEIGHT') {
-        if (data.height) setHeights(data.height);
-        return;
-      }
-      if (data.type === 'RSVP:CLOSE') {
-        closeRSVP();
-        return;
-      }
+      if (data.type === 'RSVP:HEIGHT') { if (data.height) setHeights(data.height); return; }
+      if (data.type === 'RSVP:CLOSE') { closeRSVP(); return; }
     }
-
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
-  // ESC closes overlay
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
