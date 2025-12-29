@@ -11,49 +11,59 @@
 <body>
   <!-- PANEL 1: CLOUDS (sky ombre) -->
   <section class="parallax-section panel-clouds" id="panel-clouds" aria-label="Clouds">
-    <!-- cloud layers in panel 1 (some higher, some lower via data-vertical-offset) -->
+    <!-- cloud layers in panel 1 (scattered start positions; size is fraction of viewport width) -->
     <div class="parallax-layer cloud-layer"
-         data-speed="0.04"
+         data-bg="assets/parallax/cloud1.png"
+         data-start-x="5"         <!-- percent from left -->
+         data-start-y="8"         <!-- percent from top -->
+         data-size="0.12"         <!-- fraction of viewport width (12%) -->
          data-side-speed="0.65"
          data-dir="-1"
-         data-vertical-offset="-10"
-         data-bg="assets/parallax/cloud1.png"
+         data-z="3"
          aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
-         data-speed="0.06"
+         data-bg="assets/parallax/cloud2.png"
+         data-start-x="55"
+         data-start-y="18"
+         data-size="0.10"
          data-side-speed="0.50"
          data-dir="1"
-         data-vertical-offset="5"
-         data-bg="assets/parallax/cloud2.png"
+         data-z="2"
          aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
-         data-speed="0.08"
+         data-bg="assets/parallax/cloud3.png"
+         data-start-x="30"
+         data-start-y="2"
+         data-size="0.14"
          data-side-speed="0.80"
          data-dir="-1"
-         data-vertical-offset="-25"
-         data-bg="assets/parallax/cloud3.png"
+         data-z="4"
          aria-hidden="true"></div>
   </section>
 
   <!-- PANEL 2: SKY TRANSITION (more scattered clouds across panel 2) -->
   <section class="parallax-section panel-sky" id="panel-sky" aria-label="Sky transition">
-    <!-- additional cloud layers start here with different vertical offsets -->
+    <!-- additional cloud layers with different positions / sizes -->
     <div class="parallax-layer cloud-layer"
-         data-speed="0.10"
+         data-bg="assets/parallax/cloud4.png"
+         data-start-x="10"
+         data-start-y="55"
+         data-size="0.11"
          data-side-speed="0.40"
          data-dir="1"
-         data-vertical-offset="20"
-         data-bg="assets/parallax/cloud4.png"
+         data-z="1"
          aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
-         data-speed="0.12"
+         data-bg="assets/parallax/cloud5.png"
+         data-start-x="70"
+         data-start-y="35"
+         data-size="0.09"
          data-side-speed="0.95"
          data-dir="-1"
-         data-vertical-offset="-5"
-         data-bg="assets/parallax/cloud5.png"
+         data-z="5"
          aria-hidden="true"></div>
 
     <!-- subtle sky layer to help the gradient transition -->
