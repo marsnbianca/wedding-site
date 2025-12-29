@@ -1,27 +1,38 @@
-// rsvp-overlay.js — popup-based RSVP launcher (replace existing file in wedding-site repo)
+// rsvp-overlay.js — modal iframe version
 (function () {
-  // Use your Apps Script exec URL here (the Web App "exec" URL)
-  var RSVP_URL = "https://script.google.com/macros/s/AKfycbyYUd5yZR7qjdU4_0xoX-qGCzhIMDgU5jUzqgKev-68nu3kfnmS6iqzkd7Diw9vaGxe/exec";
+  // IMPORTANT: Replace this with the full script.googleusercontent.com URL
+  // that you copy from the Network list when you open your Apps Script exec URL in a tab.
+  // Example: "https://script.googleusercontent.com/.....long...string..."
+  var RSVP_URL = "https://n-qwmf6vougjxh4aq5pssvewccq5224sxmappxwxi-0lu-script.googleusercontent.com/userCodeAppPanel";
   var RSVP_ORIGIN = "https://marsnbianca.github.io";
 
-  if (!RSVP_URL || RSVP_URL.indexOf("script.google.com") === -1) {
-    console.error("rsvp-overlay.js: RSVP_URL not set or invalid. Please set RSVP_URL to your Apps Script web app exec URL.");
+  if (!RSVP_URL || RSVP_URL.indexOf("script.googleusercontent.com") === -1) {
+    console.error("rsvp-overlay.js: RSVP_URL is not set to a script.googleusercontent.com URL. Please paste the inner URL copied from DevTools.");
   }
 
-  function openPopup(url) {
-    var popupWidth = Math.min(window.innerWidth - 40, 900);
-    var popupHeight = Math.min(window.innerHeight - 60, 700);
-    var left = Math.max(0, Math.round((window.screen.width - popupWidth) / 2));
-    var top = Math.max(0, Math.round((window.screen.height - popupHeight) / 2));
-    var features = "toolbar=0,location=0,status=0,menubar=0,scrollbars=1,resizable=1";
-    features += ",width=" + popupWidth + ",height=" + popupHeight + ",left=" + left + ",top=" + top;
-    var w = window.open(url, "rsvp_popup", features);
-    if (!w) {
-      alert("Popup blocked. Please allow popups for this site or open the RSVP link in a new tab.");
-      return null;
+  var host = document.createElement("div");
+  host.id = "rsvpHostOverlay";
+  host.style.position = "fixed";
+  host.style.inset = "0";
+  host.style.zIndex = "999999";
+  host.style.background = "transparent";
+  host.style.display = "none";
+  host.style.pointerEvents = "none";
+  document.body.appendChild(host);
+
+  var iframe = null;
+  var lastFocus = null;
+
+  function lockScroll(lock) {
+    if (lock) {
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+    } else {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      document.body.style.touchAction = "";
     }
-    try { w.focus(); } catch (_) {}
-    return w;
   }
 
   function openRSVP(e) {
@@ -29,54 +40,77 @@
       e.preventDefault();
       try { e.stopPropagation(); } catch (_) {}
     }
-    var url = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
-    openPopup(url);
-    console.log("rsvp-overlay: opened popup ->", url);
+
+    lastFocus = document.activeElement;
+
+    host.innerHTML = "";
+    host.style.display = "block";
+    host.style.pointerEvents = "auto";
+    host.style.background = "rgba(0,0,0,0.35)";
+
+    iframe = document.createElement("iframe");
+    // add cache buster param
+    iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
+    iframe.style.position = "absolute";
+    iframe.style.inset = "0";
+    iframe.style.width = "100%";
+    iframe.style.height = "100%";
+    iframe.style.border = "0";
+    iframe.style.background = "transparent";
+    iframe.setAttribute("allowtransparency", "true");
+    iframe.setAttribute("title", "RSVP");
+
+    host.appendChild(iframe);
+    lockScroll(true);
+    console.log("rsvp-overlay: opened iframe ->", iframe.src);
   }
 
-  // click delegation and direct handlers
-  function onDocumentClick(e) {
+  function closeRSVP() {
+    host.innerHTML = "";
+    host.style.display = "none";
+    host.style.pointerEvents = "none";
+    host.style.background = "transparent";
+    lockScroll(false);
+
+    try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (_) {}
+    lastFocus = null;
+    iframe = null;
+    console.log("rsvp-overlay: closed");
+  }
+
+  document.addEventListener("click", function (e) {
     var t = e.target;
-    try {
-      var img = (t.closest && (t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"], [data-rsvp="open"]')));
-      if (img) { openRSVP(e); return; }
-      var el = (t.closest && t.closest("a, button, div, span"));
-      if (el) {
-        var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
-        if (txt === "rsvp") { openRSVP(e); return; }
-      }
-    } catch (err) {
-      console.error("rsvp-overlay: click handler error", err);
-    }
-  }
-  document.addEventListener("click", onDocumentClick, true);
+    var img = t.closest && t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"], [data-rsvp="open"]');
+    if (img) { openRSVP(e); return; }
 
-  function attachDirectHandlers() {
-    var selectors = [
-      ".rsvp-btn",
-      '[data-rsvp=\"open\"]',
-      'img[alt=\"openRSVP\"]',
-      'img[aria-label=\"openRSVP\"]',
-      'img[title=\"openRSVP\"]',
-      'button[aria-label=\"openRSVP\"]'
-    ];
-    var nodes = document.querySelectorAll(selectors.join(","));
-    for (var i = 0; i < nodes.length; i++) {
-      (function (node) {
-        if (node.__rsvpAttached) return;
-        node.addEventListener("click", function (ev) { openRSVP(ev); });
-        node.__rsvpAttached = true;
-      })(nodes[i]);
+    var el = t.closest && t.closest("a, button, div, span");
+    if (el) {
+      var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
+      if (txt === "rsvp") { openRSVP(e); return; }
     }
-  }
-  try { attachDirectHandlers(); } catch (_) {}
-  document.addEventListener("DOMContentLoaded", attachDirectHandlers);
+  }, true);
 
-  // expose debug helper
+  // close when iframe posts "RSVP:CLOSE"
+  window.addEventListener("message", function (e) {
+    if (!e) return;
+    // accept messages from script.googleusercontent.com (inner UI) too
+    if (e.origin !== RSVP_ORIGIN && !e.origin.startsWith("https://script.googleusercontent.com") && !e.origin.startsWith("https://script.google.com")) {
+      console.warn("rsvp-overlay: ignoring message from origin", e.origin);
+      return;
+    }
+    if (e.data === "RSVP:CLOSE") closeRSVP();
+  });
+
+  window.addEventListener("keydown", function (e) {
+    if (e && e.key === "Escape" && host.style.display === "block") closeRSVP();
+  });
+
+  // debug helpers
   window.__rsvp = {
-    open: openRSVP,
-    info: function() { return { RSVP_URL: RSVP_URL }; }
+    open: function () { openRSVP(); },
+    close: function () { closeRSVP(); },
+    info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay") }; }
   };
 
-  console.log("rsvp-overlay (popup) initialized. Use window.__rsvp.open() to open.");
+  console.log("rsvp-overlay: initialized. Use window.__rsvp.open() to open.");
 })();
