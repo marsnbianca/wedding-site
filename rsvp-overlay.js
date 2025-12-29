@@ -66,7 +66,6 @@
     topCloseBtn.setAttribute('aria-label', 'Close RSVP');
     topCloseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     topCloseBtn.addEventListener('click', closeRSVP);
-    // append later to card when card is created
   }
 
   function openRSVP(e) {
@@ -86,7 +85,6 @@
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-modal', 'true');
 
-    // top X
     createTopClose();
     if (topCloseBtn) card.appendChild(topCloseBtn);
 
@@ -138,7 +136,6 @@
     console.log('rsvp-overlay: closed');
   }
 
-  // show/hide the top X based on child message
   function setTopCloseVisible(visible) {
     if (!topCloseBtn) return;
     topCloseBtn.style.display = visible ? '' : 'none';
@@ -173,7 +170,6 @@
       if (data.type === 'RSVP:HEIGHT') { if (data.height) setHeights(data.height); return; }
       if (data.type === 'RSVP:CLOSE') { closeRSVP(); return; }
       if (data.type === 'RSVP:HAS_BOTTOM_CLOSE') {
-        // data.hasBottomClose === true => child shows a bottom Close; hide top X
         setTopCloseVisible(!data.hasBottomClose);
         return;
       }
@@ -186,9 +182,7 @@
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // ensure topCloseBtn is available globally even before open (create it)
   createTopClose();
-  // default: top close visible
   setTopCloseVisible(true);
 
   window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
