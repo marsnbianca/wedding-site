@@ -2,13 +2,12 @@
 // Path: wedding-site/rsvp-overlay.js
 // Include from your wedding-site index.html: <script src="rsvp-overlay.js"></script>
 //
-// Behavior implemented here (per your request):
-// - Apply ONLY height recommendations (min/max) per device breakpoint.
-// - Modal/iframe will grow/shrink with content when possible; if the child reports its content height (RSVP:HEIGHT)
-//   the parent will use that but clamp it to the device max. If the child doesn't report height the iframe is left
-//   'auto' and CSS min/max take effect (internal iframe scroll will occur if content exceeds max).
-// - Uses svh / vh units for mobile/desktop caps as in your guide.
-// - Adds a small smooth transition and a DEBUG flag you can toggle: window.__rsvp.setDebug(true).
+// Behavior:
+// - Height recommendations (min/max) per breakpoint are applied via CSS.
+// - Parent will use child-reported height (RSVP:HEIGHT) to size the iframe and avoid internal scrolling when possible.
+// - If content exceeds the recommended max the overlay will allow scrolling, BUT the modal card will remain centered vertically
+//   (as requested) instead of switching to strict top-aligned layout.
+// - Small entrance animation and optional debug logging are included.
 
 (function () {
   var DEBUG = false;
@@ -36,7 +35,7 @@
 
       /* Iframe: allow it to size with content; enforce min/max heights per breakpoints (your guide rules) */
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box;",
-      " height:auto; transition: max-height .18s ease, height .18s ease; }",
+      " height:auto; transition: max-height .18s ease, height .18s ease; overflow:hidden; }",
 
       /* MOBILE (default) — small devices */
       ".rsvp-modal-card .rsvp-modal-iframe{ min-height:20svh; max-height:85svh; }",
@@ -47,10 +46,14 @@
       /* Desktop */
       "@media (min-width:1008px){ .rsvp-modal-card .rsvp-modal-iframe{ min-height:400px; max-height:70vh; } }",
 
-      /* Card size caps (keeping width as you asked earlier) */
+      /* Card size caps (keeping width as requested earlier) */
       "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(90vw, 26rem); } }",
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:76vw; } }",
       "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(60vw, 50rem); min-width:36rem; } }",
+
+      /* entrance */
+      ".rsvp-modal-card.rsvp-enter{ transform: translateY(-6px); opacity:0; }",
+      ".rsvp-modal-card.rsvp-enter.rsvp-enter-to{ transform: translateY(0); opacity:1; }",
 
       /* Close button */
       ".rsvp-modal-close{ position:absolute; right:0.6rem; top:0.6rem; z-index:10; background:rgba(255,255,255,0.95); border:0;",
@@ -80,13 +83,13 @@
     var vh = window.innerHeight || document.documentElement.clientHeight;
     if (vw >= 1008) {
       // desktop uses vh static
-      return Math.min(Math.round(vh * 0.70), 9999); // max 70vh (no lower px cap here; keep large)
+      return Math.round(vh * 0.70); // 70vh
     }
     if (vw >= 641) {
-      // tablet: 80svh — interpret using vh as fallback
+      // tablet: ~80svh (fallback using vh)
       return Math.round(vh * 0.80);
     }
-    // mobile: 85svh (use vh fallback)
+    // mobile: ~85svh
     return Math.round(vh * 0.85);
   }
 
@@ -97,6 +100,76 @@
     topCloseBtn.setAttribute('aria-label', 'Close RSVP');
     topCloseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     topCloseBtn.addEventListener('click', closeRSVP);
+  }
+
+  function animateEntrance() {
+    if (!card) return;
+    card.classList.add('rsvp-enter');
+    requestAnimationFrame(function () { card.classList.add('rsvp-enter-to'); });
+    setTimeout(function () { if (card) card.classList.remove('rsvp-enter', 'rsvp-enter-to'); }, 360);
+  }
+
+  function applyPadding(stepName) {
+    if (!card) return;
+    var map = { search:0.6, matches:0.7, notInList:0.6, attendance:1.0, transport:0.8, phone:0.7, notes:0.7, review:0.8, thanks:0.6 };
+    var pref = (map[stepName] || 0.8);
+    var cfgMin = 0.5, cfgMax = 1.6;
+    var pad = Math.max(cfgMin, Math.min(cfgMax, pref));
+    var padH = Math.max(0.45, pad * 0.6);
+    card.style.paddingTop = pad + 'rem';
+    card.style.paddingBottom = pad + 'rem';
+    card.style.paddingLeft = padH + 'rem';
+    card.style.paddingRight = padH + 'rem';
+  }
+
+  // Set iframe height to child content height.
+  // Keep modal centered vertically always (user requested). When content exceeds recommended maximum
+  // the overlay will allow scrolling (host overflow = 'auto') but the card will remain centered.
+  function onChildHeightReported(h, stepName) {
+    if (!iframe || !card || !host) return;
+    var reported = parseInt(h, 10) || 0;
+    if (!reported) return;
+    var recommendedMax = getRecommendedMaxPx();
+
+    applyPadding(stepName);
+
+    // Always set iframe to the content height so it doesn't show internal scrollbars.
+    iframe.style.height = reported + 'px';
+    iframe.style.overflow = 'hidden';
+
+    // If content fits within recommended max, hide overlay scroll; otherwise allow overlay scroll,
+    // but keep the card centered vertically (user preference).
+    if (reported <= recommendedMax) {
+      host.style.overflow = 'hidden';
+      host.style.alignItems = 'center';
+      card.style.marginTop = '';
+      card.style.marginBottom = '';
+    } else {
+      // allow overlay to scroll, but keep center alignment so the modal is visually centered when possible
+      host.style.overflow = 'auto';
+      // keep alignItems center to maintain vertical centering in initial viewport
+      host.style.alignItems = 'center';
+      // add a small margin so card isn't flush against the top when user scrolls
+      card.style.marginTop = '1rem';
+      card.style.marginBottom = '1rem';
+    }
+
+    // enforce a visual max-height so debug/CSS aware tools have a bound (doesn't change iframe.height)
+    iframe.style.maxHeight = Math.max(reported, recommendedMax) + 'px';
+    log('onChildHeightReported', reported, 'clamped->', Math.min(reported, recommendedMax), 'recommendedMax', recommendedMax, 'step', stepName);
+  }
+
+  // Fallback: apply CSS height recommendations and padding when child doesn't report height.
+  function applyCssHeightRecommendations(stepName) {
+    if (!iframe || !card || !host) return;
+    applyPadding(stepName);
+    iframe.style.height = 'auto';
+    iframe.style.overflowY = 'auto'; // internal scroll allowed in fallback
+    host.style.alignItems = 'center'; // keep centered
+    host.style.overflow = 'hidden';
+    card.style.marginTop = '';
+    card.style.marginBottom = '';
+    log('applyCssHeightRecommendations for step', stepName);
   }
 
   function openRSVP(e) {
@@ -122,11 +195,10 @@
     iframe.className = 'rsvp-modal-iframe';
     iframe.setAttribute('title', 'RSVP');
     iframe.setAttribute('allowtransparency', 'true');
-    // keep iframe scrolling allowed — internal scrolling will happen only if content > max-height
+    // keep iframe scrolling allowed initially; parent will set height / overflow on messages
     iframe.setAttribute('scrolling', 'auto');
     iframe.src = RSVP_URL + (RSVP_URL.indexOf('?') === -1 ? '?t=' + Date.now() : '&t=' + Date.now());
 
-    // leave height:auto so iframe grows with content where possible (cross-origin limit)
     iframe.style.height = 'auto';
     iframe.style.boxSizing = 'border-box';
 
@@ -138,14 +210,13 @@
     };
     host.addEventListener('click', hostClickHandler);
 
-    // On load, request the active step (so parent can apply any step-driven padding if you still need it)
     iframe.addEventListener('load', function () {
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {}
-      // request child height if it can provide it
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
       setTimeout(function () {
         try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_HEIGHT' }, '*'); } catch (_) {}
       }, 160);
+      animateEntrance();
     });
 
     lockScroll(true);
@@ -168,50 +239,7 @@
     console.info('rsvp-overlay: closed');
   }
 
-  // If child posts height we will use it, but clamp to recommended max.
-  function onChildHeightReported(h, stepName) {
-    if (!iframe || !card || !host) return;
-    var reported = parseInt(h, 10) || 0;
-    if (!reported) return;
-    var recommendedMax = getRecommendedMaxPx();
-
-    // clamp reported height
-    var finalH = Math.min(reported, recommendedMax);
-
-    // Apply to iframe: set explicit height so internal scroll is removed when possible
-    iframe.style.height = finalH + 'px';
-    iframe.style.maxHeight = Math.max(finalH, recommendedMax) + 'px'; // keep max-height sensible
-
-    // center if it fits, otherwise allow overlay scroll (top-align)
-    if (reported <= recommendedMax) {
-      host.style.alignItems = 'center';
-      host.style.overflow = 'hidden';
-      card.style.marginTop = '';
-      card.style.marginBottom = '';
-    } else {
-      host.style.alignItems = 'flex-start';
-      host.style.overflow = 'auto';
-      card.style.marginTop = '1.5rem';
-      card.style.marginBottom = '1.5rem';
-    }
-    log('onChildHeightReported', reported, 'clamped->', finalH, 'recommendedMax', recommendedMax, 'step', stepName);
-  }
-
-  // fallback: apply only height recommendations via CSS (no child height)
-  function applyCssHeightRecommendations(stepName) {
-    if (!iframe || !card) return;
-    // CSS already defines min/max via media queries. We can optionally nudge padding per step here.
-    log('applyCssHeightRecommendations for step', stepName);
-    // keep iframe height auto and CSS min/max will apply
-    iframe.style.height = 'auto';
-    iframe.style.overflowY = 'auto';
-    host.style.alignItems = 'center';
-    host.style.overflow = 'hidden';
-    card.style.marginTop = '';
-    card.style.marginBottom = '';
-  }
-
-  // delegated opener (supports <img alt="openRSVP"> and .rsvp-btn)
+  // Delegated opener
   document.addEventListener('click', function (e) {
     var t = e.target;
     try {
@@ -225,7 +253,7 @@
     } catch (_) {}
   }, true);
 
-  // Message listener: handle child messages (RSVP:HEIGHT and RSVP:STEP)
+  // Message listener
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
@@ -241,20 +269,17 @@
 
     if (typeof data === 'object' && data.type) {
       if (data.type === 'RSVP:HEIGHT') {
-        // child reports content height in px
         if (data.height) {
           onChildHeightReported(data.height, data.step || '');
           return;
         }
       }
       if (data.type === 'RSVP:STEP') {
-        // only step name -> apply CSS height recommendations (no height)
         applyCssHeightRecommendations(data.step || '');
         return;
       }
       if (data.type === 'RSVP:CLOSE') { closeRSVP(); return; }
       if (data.type === 'RSVP:HAS_BOTTOM_CLOSE') {
-        // show/hide top close depending on child
         if (!topCloseBtn) createTopClose();
         topCloseBtn.style.display = data.hasBottomClose ? 'none' : '';
         return;
@@ -277,5 +302,5 @@
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: initialized (height recommendations applied: min/max per device; responsive to child height when provided)');
+  console.log('rsvp-overlay: initialized (height recommendations applied; modal centered vertically)');
 })();
