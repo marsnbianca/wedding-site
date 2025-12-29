@@ -1,7 +1,11 @@
 <script>
 (function () {
-  var RSVP_ORIGIN = "https://marsnbianca.github.io"; // parent site origin (for origin checks)
-  var RSVP_URL = "https://script.google.com/macros/s/AKfycbzdV48pD-cQn5O_lNhnqh1ijjaTbyMG0IIAu2HAWLe2BXxBAWfpTl2Evc1w2S6uX3VP/exec"; // <-- your deployed Apps Script URL
+  // Parent origin used for postMessage origin checks
+  var RSVP_ORIGIN = "https://marsnbianca.github.io";
+
+  // IMPORTANT: set this to your Apps Script web app "exec" URL (the deployed Web App URL)
+  // Replace the URL below with the exec URL you get when you Deploy -> New deployment -> Web app
+  var RSVP_URL = "https://script.google.com/macros/s/AKfycbzdV48pD-cQn5O_lNhnqh1ijjaTbyMG0IIAu2HAWLe2BXxBAWfpTl2Evc1w2S6uX3VP/exec";
 
   var host = document.createElement("div");
   host.id = "rsvpHostOverlay";
@@ -39,7 +43,7 @@
     host.innerHTML = "";
     host.style.display = "block";
     host.style.pointerEvents = "auto";
-    host.style.background = "transparent";
+    host.style.background = "rgba(0,0,0,0.25)"; // subtle backdrop
 
     iframe = document.createElement("iframe");
     iframe.src = RSVP_URL + "?t=" + Date.now();
@@ -68,18 +72,15 @@
     iframe = null;
   }
 
-  // ONE reliable RSVP trigger for Readymag
   document.addEventListener("click", function (e) {
     var t = e.target;
 
-    // 1) Image-based trigger (set Alt Text of your picture to openRSVP)
-    var img = t.closest && t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"]');
+    var img = t.closest && t.closest('img[alt="openRSVP"], img[aria-label="openRSVP"], img[title="openRSVP"], button[aria-label="openRSVP"]');
     if (img) {
       openRSVP(e);
       return;
     }
 
-    // 2) Text-based trigger fallback ("RSVP")
     var el = t.closest && t.closest("a, button, div, span");
     if (el) {
       var txt = (el.innerText || el.textContent || "").trim().toLowerCase();
@@ -91,11 +92,11 @@
   }, true);
 
   window.addEventListener("message", function (e) {
-  if (!e) return;
-  // accept messages from your github pages OR from Apps Script origin
-  if (e.origin !== RSVP_ORIGIN && !e.origin.startsWith("https://script.google.com")) return;
-  if (e.data === "RSVP:CLOSE") closeRSVP();
-});
+    if (!e) return;
+    // accept messages from your github pages OR from Apps Script origin
+    if (e.origin !== RSVP_ORIGIN && !e.origin.startsWith("https://script.google.com") && !e.origin.startsWith("https://script.googleusercontent.com")) return;
+    if (e.data === "RSVP:CLOSE") closeRSVP();
+  });
 
   window.addEventListener("keydown", function (e) {
     if (e && e.key === "Escape" && host.style.display === "block") closeRSVP();
