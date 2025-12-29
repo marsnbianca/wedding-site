@@ -25,7 +25,7 @@
       "@media (max-width:640px){ .rsvp-modal-card{ max-width: min(90vw, 22.5rem); } }",
       /* Tablet */
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card{ max-width:76vw; } }",
-      /* Desktop: explicit 50vw max and cap at 50rem */
+      /* Desktop: explicit 50vw max as requested (but also cap at a rem-based maximum) */
       "@media (min-width:1008px){ .rsvp-modal-card{ max-width: min(50vw, 50rem); } }",
 
       ".rsvp-modal-iframe{ width:100%; border:0; display:block; background:transparent; box-sizing:border-box; }",
@@ -38,6 +38,7 @@
   }
 
   var iframe = null, card = null, lastFocus = null, hostClickHandler = null, topCloseBtn = null;
+  var sizeRequestTimer = null;
 
   function lockScroll(lock) {
     if (lock) {
@@ -56,7 +57,6 @@
     var w = window.innerWidth || document.documentElement.clientWidth;
     var vh = window.innerHeight || document.documentElement.clientHeight;
     var caps = {};
-    // heights caps: recommended by you
     if (w >= 1008) {
       caps.maxHeightPx = Math.min(650, Math.round(vh * 0.65)); // desktop cap ~650px or 65vh
       caps.widthCap = Math.min(Math.round(w * 0.5), 50 * parseFloat(getComputedStyle(document.documentElement).fontSize)); // 50vw capped by 50rem
@@ -117,7 +117,6 @@
     var caps = breakpointCaps();
     var vh = caps.vh, vw = caps.vw, maxH = caps.maxHeightPx;
 
-    // determine desktop baseline fraction
     var fraction;
     if (stepName === 'attendance') {
       fraction = (maxSeats && maxSeats > 1) ? desktopStepVH.attendance_multi : desktopStepVH.attendance_single;
@@ -125,45 +124,35 @@
       fraction = desktopStepVH[stepName] || desktopStepVH.search;
     }
 
-    // scale by breakpoint
     if (vw >= 1008) {
-      // desktop: use fraction as-is
+      // desktop: fraction as-is
     } else if (vw >= 641) {
-      // tablet: slightly smaller fraction (90% of desktop)
       fraction = Math.min(0.9, fraction * 0.9);
     } else {
-      // mobile: allow content to be a bit taller but cap by mobile rule below
       fraction = Math.min(0.9, fraction * 1.0);
     }
 
-    // compute desired height in px
     var desiredH = Math.round(vh * fraction);
 
-    // compute min height based on padding and a small base content (rem-based)
     var pad = paddingForStep(stepName || '');
     var padPx = remToPx(pad);
-    var baseContentRem = 5.5; // base content area in rem (approx)
+    var baseContentRem = 5.5;
     var rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     var baseContentPx = baseContentRem * rootFs;
     var minH = Math.round(baseContentPx + padPx * 2);
     minH = Math.max(minH, Math.round(vh * 0.12), 120);
 
-    // Apply final height = clamp(desiredH, minH, maxH)
     var finalH = Math.min(Math.max(desiredH, minH), maxH);
     iframe.style.height = finalH + 'px';
     iframe.style.maxHeight = maxH + 'px';
 
-    // Width: pick relative vw constrained to CSS max-width
     var finalVw;
-    if (vw >= 1008) finalVw = 50;         // desktop target 50vw
-    else if (vw >= 641) finalVw = 76;     // tablet
-    else finalVw = 90;                    // mobile
+    if (vw >= 1008) finalVw = 50;
+    else if (vw >= 641) finalVw = 76;
+    else finalVw = 90;
     card.style.width = finalVw + 'vw';
 
-    // Padding
     card.style.padding = pad;
-
-    // ensure height/width change applied
     card.style.height = 'auto';
   }
 
@@ -174,6 +163,12 @@
     topCloseBtn.setAttribute('aria-label', 'Close RSVP');
     topCloseBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="18" height="18"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     topCloseBtn.addEventListener('click', closeRSVP);
+  }
+
+  // show/hide top X when child indicates a bottom Close exists
+  function setTopCloseVisible(visible) {
+    if (!topCloseBtn) return;
+    topCloseBtn.style.display = visible ? '' : 'none';
   }
 
   function openRSVP(e) {
@@ -213,7 +208,6 @@
     };
     host.addEventListener('click', hostClickHandler);
 
-    // request the child step shortly after load
     iframe.addEventListener('load', function () {
       try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {}
       setTimeout(function(){ try { iframe.contentWindow.postMessage({ type: 'RSVP:REQUEST_STEP' }, '*'); } catch (_) {} }, 160);
@@ -239,7 +233,6 @@
     console.log('rsvp-overlay: closed');
   }
 
-  // handle messages from child — only listen for step notifications
   window.addEventListener('message', function (e) {
     if (!e) return;
     try {
@@ -251,13 +244,12 @@
 
     var data = e.data;
     if (!data) return;
+
     if (typeof data === 'object' && data.type) {
       if (data.type === 'RSVP:STEP') {
-        // child says which step is active; parent sizes accordingly
         var step = data.step || 'search';
         var maxSeats = parseInt(data.maxSeats || 1, 10) || 1;
         sizeForStep(step, maxSeats);
-        // hide top X if child indicates bottom-close (legacy)
         if (typeof data.hasBottomClose !== 'undefined') setTopCloseVisible(!data.hasBottomClose);
         return;
       }
@@ -265,24 +257,19 @@
         setTopCloseVisible(!data.hasBottomClose);
         return;
       }
-      if (data.type === 'RSVP:CLOSE') {
-        closeRSVP();
-        return;
-      }
+      if (data.type === 'RSVP:CLOSE') { closeRSVP(); return; }
     }
+
     if (e.data === 'RSVP:CLOSE') { closeRSVP(); return; }
   });
 
-  // escape closes
   window.addEventListener('keydown', function (e) {
     if (e && e.key === 'Escape' && host.style.display === 'flex') closeRSVP();
   });
 
-  // create top close upfront
   createTopClose();
   setTopCloseVisible(true);
 
-  // expose helper
   window.__rsvp = { open: openRSVP, close: closeRSVP, info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; } };
 
   console.log('rsvp-overlay: initialized (step-driven sizing, desktop 50vw cap)');
