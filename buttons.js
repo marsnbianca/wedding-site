@@ -22,7 +22,7 @@
       const el = document.getElementById(id);
       if (!el) return;
 
-      // Set visible alt text but preserve title/aria-label if overlay script relies on them
+      // Set visible alt but preserve title/aria-label if overlay script relies on them
       el.src = defaultSrc;
       el.alt = altText;
       if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', altText);
