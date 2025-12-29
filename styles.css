@@ -2,44 +2,62 @@
   --max-width: 980px;
   --space: 1.25rem;
   --accent: #b86b9d;
-  --text: #fff;
-  --panel-height: 100vh; /* default panel height */
+  --text-dark: #04293a;
+  --text-light: #fff;
+  --panel-height: 100vh;
 }
 
-/* Base */
+/* Reset / base */
+*{box-sizing: border-box}
 html,body{height:100%}
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-  color: var(--text);
+  color: var(--text-dark);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  /* body background darker deep-blue for parts below hero */
-  background: linear-gradient(135deg, #071428 0%, #0e2a44 60%, #123c57 100%);
+  background: linear-gradient(180deg,#071428 0%, #071428 100%); /* deep background for below content */
   overflow-x: hidden;
 }
 
-.container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
+/* Centered content container used only for textual content */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: calc(var(--space) + 4vw);
+}
 
-/* Panels */
+/* Generic parallax panel styles (full bleed) */
 .parallax-section{
   position: relative;
+  width: 100%;
   height: var(--panel-height);
-  min-height: 480px;
+  min-height: 360px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: auto;
   isolation: isolate;
 }
 
-/* HERO: lighter sky background for first panel */
-.parallax-section.hero {
-  background: linear-gradient(180deg, #dff6ff 0%, #bfe9ff 45%, rgba(255,255,255,0) 100%);
+/* PANEL STYLING */
+
+/* Panel 1: clouds-only — lighter sky */
+.panel-clouds {
+  background: linear-gradient(180deg, #dff6ff 0%, #bfe9ff 100%);
 }
 
-/* Layers */
+/* Panel 2: sky transition (still sky, slightly darker to hint change) */
+.panel-sky {
+  background: linear-gradient(180deg, #bfe9ff 0%, #a0d8f7 100%);
+}
+
+/* Panel 3: content — use deeper tone to transition into site style */
+.panel-content {
+  background: linear-gradient(180deg, #eaf7ff 0%, #f3f9ff 100%);
+}
+
+/* Parallax layers (background images, clouds, overlays) */
 .parallax-layer{
   position: absolute;
   top: 0;
@@ -56,28 +74,27 @@ body {
   pointer-events: none;
 }
 
-/* cloud layer specific tuning */
+/* Cloud layers: 50% smaller than previous: previously auto 60% -> now auto 30% */
 .cloud-layer {
-  background-size: auto 60%; /* allow clouds to be naturally sized — will scale with viewport */
-  opacity: 0.95;
+  background-size: auto 30%;       /* 50% smaller than the previous 60% */
+  opacity: 0.98;
   z-index: 1;
   mix-blend-mode: normal;
 }
 
-/* overlay */
+/* overlay style for depth */
 .parallax-layer--overlay{
   mix-blend-mode: overlay;
-  opacity: 0.85;
+  opacity: 0.28;
   z-index: 2;
 }
 
-/* content — center everything and stack vertically */
+/* Foreground content (centered inside container) */
 .section-content{
   position: relative;
   z-index: 10;
   text-align: center;
-  color: white;
-  text-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  color: var(--text-dark);
   max-width: calc(var(--max-width) - 2rem);
   padding: 2rem;
 
@@ -87,11 +104,18 @@ body {
   gap: 1rem;
 }
 
-/* Typography */
-.hero h1{ margin: 0 0 .5rem 0; font-size: clamp(2rem, 5vw, 4rem); color: #023e6b; text-shadow: none; }
-.hero p.lead, .section-content .lead{ margin: 0 0 1rem 0; font-size: clamp(1rem, 1.6vw, 1.25rem); color: #034b73; }
+.section-content h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4.5vw, 3.25rem);
+  color: var(--text-dark);
+}
+.section-content .lead {
+  margin: 0;
+  font-size: clamp(1rem, 1.6vw, 1.1rem);
+  color: #064a6f;
+}
 
-/* image buttons (RSVP, MAP, etc.) */
+/* Image buttons: height controlled with clamp (keeps previous relative sizing, responsive) */
 .image-button {
   display: inline-block;
   margin: 0.5rem auto;
@@ -102,7 +126,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 
   width: auto;
-  height: clamp(3.5rem, 8vh, 5rem);
+  height: clamp(3.5rem, 8vh, 5rem); /* responsive, capped around 80px */
   object-fit: contain;
   max-width: 90%;
 }
@@ -113,63 +137,38 @@ body {
   border-radius: 6px;
 }
 
-/* fallback content area below panels */
-.content{
-  padding: 3rem 1rem;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  background: none;
+/* page content (below parallax panels) */
+.page-content {
+  background: transparent;
   color: #fff;
-  text-align: left;
+  padding-top: 2rem;
+  padding-bottom: 4rem;
 }
 
-/* small-screen adjustments */
-@media (max-width: 900px){
-  :root{ --panel-height: 70vh; }
-  .parallax-layer{ width: 220%; left: 50%; transform: translateX(-50%); }
-  .parallax-section{ min-height: 420px; }
-  .section-content{ padding: 1rem; }
-  .content { color: #111; }
+/* minimal styling for footer text */
+footer small { color: #bfcbd6; }
 
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  :root { --panel-height: 70vh; }
+
+  .parallax-layer{ width: 220%; left: 50%; transform: translateX(-50%); }
+
+  .panel-clouds { background: linear-gradient(180deg, #dff6ff 0%, #cdefff 100%); }
+  .panel-sky { background: linear-gradient(180deg, #cdefff 0%, #b5e6ff 100%); }
+
+  .section-content { padding: 1rem; }
   .image-button { height: clamp(3rem, 9vh, 4.5rem); }
 }
 
-/* very small screens */
 @media (max-width: 480px) {
+  :root { --panel-height: 60vh; }
+
+  .cloud-layer { background-size: auto 40%; } /* a bit larger on tiny screens for visibility */
   .image-button { height: clamp(2.6rem, 10vh, 4rem); }
 }
 
-/* Respect prefers-reduced-motion */
-@media (prefers-reduced-motion: reduce){
-  .parallax-layer { transition: none !important; will-change: auto !important; }
-}
-
-/* Overlay / modal sizing fixes */
-.rsvp-overlay,
-.overlay,
-.overlay-host,
-.rsvp-modal,
-#rsvp-overlay,
-.modal {
-  box-sizing: border-box;
-}
-.rsvp-overlay .panel,
-.overlay .panel,
-.rsvp-modal,
-.modal,
-#rsvp-overlay {
-  min-height: 50vh;
-  max-height: 95vh;
-  height: auto;
-  overflow: auto;
-  padding: 1rem;
-}
-@media (max-width: 480px) {
-  .rsvp-overlay .panel,
-  .overlay .panel,
-  .rsvp-modal,
-  .modal,
-  #rsvp-overlay {
-    min-height: 60vh;
-  }
+/* Respect prefers-reduced-motion: reduce heavy motion */
+@media (prefers-reduced-motion: reduce) {
+  .parallax-layer { transition: none !important; will-change: auto !important; transform: none !important; background-position: center 50% !important; }
 }
