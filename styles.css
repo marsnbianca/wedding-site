@@ -1,0 +1,117 @@
+:root{
+  --max-width: 980px;
+  --space: 1.25rem;
+  --accent: #b86b9d;
+  --text: #fff;
+  --panel-height: 100vh; /* default panel height */
+}
+
+html,body{height:100%}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+  color: var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  /* charcoal / deep-blue background as requested */
+  background: linear-gradient(135deg, #071428 0%, #0e2a44 60%, #123c57 100%);
+  overflow-x: hidden;
+}
+
+.container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
+
+/* ---- PARALLAX SECTIONS ---- */
+.parallax-section{
+  position: relative;
+  height: var(--panel-height);
+  min-height: 480px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+/* stacking and visual layers */
+.parallax-layer{
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  width: 140%;
+  height: 120%;
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  will-change: transform;
+  backface-visibility: hidden;
+  z-index: 0;
+}
+.parallax-layer--overlay{
+  mix-blend-mode: overlay;
+  opacity: 0.85;
+}
+
+/* content above layers */
+.section-content{
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  color: white;
+  text-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  max-width: calc(var(--max-width) - 2rem);
+  padding: 2rem;
+}
+
+/* Example typographic scale for each panel */
+.hero h1{ margin: 0 0 .5rem 0; font-size: clamp(2rem, 5vw, 4rem); }
+.hero p.lead{ margin: 0 0 1rem 0; font-size: clamp(1rem, 1.6vw, 1.25rem); color: #f6eef8; }
+.cta {
+  display:inline-block;
+  padding:.6rem 1.1rem;
+  background:var(--accent);
+  color:white;
+  border-radius:999px;
+  text-decoration:none;
+  font-weight:600;
+  box-shadow: 0 6px 18px rgba(184,107,157,0.18);
+}
+
+/* RSVP image button */
+.rsvp-btn {
+  display:block;
+  margin: 1rem auto;
+  width: 120px;
+  height: 80px;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+
+/* subtle separators for content sections that follow */
+.content{
+  padding: 3rem 1rem;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  background: none;
+  color: #fff;
+  text-align: left;
+}
+
+/* small-screen adjustments */
+@media (max-width: 900px){
+  :root{ --panel-height: 70vh; }
+  .parallax-layer{ width: 220%; left: 50%; transform: translateX(-50%); }
+  .parallax-section{ min-height: 420px; }
+  .section-content{ padding: 1rem; }
+  .content { color: #111; } /* keep body text readable on small where panels are smaller */
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  .parallax-layer { transition: none !important; will-change: auto !important; }
+}
+
+/* simple fallback when JS disabled: show images as backgrounds via inline styles */
+.no-js .parallax-layer { position: absolute; }
