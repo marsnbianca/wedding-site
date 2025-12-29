@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mars & Bianca — Wedding</title>
   <style>
-    /* minimal demo styles */
-    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
     header { height: 60vh; background: linear-gradient(135deg, #f7e7f2 0%, #fff 100%); display:flex; align-items:center; justify-content:center; }
     .hero { text-align:center; }
     .rsvp-btn { display:inline-block; cursor:pointer; border:0; background:transparent; }
     .content { padding: 2rem; }
+    /* overlay host will be injected by rsvp-overlay.js */
   </style>
 </head>
 <body>
@@ -20,18 +20,15 @@
     <h1>Mars & Bianca</h1>
     <p>We're getting married — join us</p>
 
-    <!-- This image acts as your picture button.
-         Set the alt/title/aria-label to openRSVP so your overlay script finds it. -->
-    <img
-      src="assets/buttons/RSVP-1.png"
-      alt="openRSVP"
-      aria-label="openRSVP"
-      title="openRSVP"
-      class="rsvp-btn"
-      width="120"
-      height="80"
-      style="display:block; margin: 1rem auto;"
-    />
+    <!-- Your picture button (set alt/title/aria-label to openRSVP) -->
+    <img src="assets/buttons/RSVP-1.png"
+         alt="openRSVP"
+         aria-label="openRSVP"
+         title="openRSVP"
+         class="rsvp-btn"
+         width="120"
+         height="80"
+         style="display:block; margin: 1rem auto;" />
   </div>
 </header>
 
@@ -40,7 +37,7 @@
   <p>Parallax, animations and more go here — build your pages however you like.</p>
 </div>
 
-<!-- Load overlay script (relative path). Make sure rsvp-overlay.js is in the same directory as this index.html -->
+<!-- Load overlay script (relative path). Make sure rsvp-overlay.js is in the same directory as index.html -->
 <script src="rsvp-overlay.js"></script>
 
 </body>
