@@ -10,7 +10,6 @@
     const panel1 = document.getElementById("panel-1");
     const panel2 = document.getElementById("panel-2");
 
-    const stdWrap = document.getElementById("std-sky-wrap");
     const lake = document.getElementById("lake");
     const crater = document.getElementById("crater");
 
@@ -18,14 +17,9 @@
     const mapPoster = document.getElementById("map-poster");
 
     const cloudEls = Array.from(document.querySelectorAll(".cloud-layer"));
-
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
-    function smoothstep(a, b, x) {
-      const t = clamp((x - a) / (b - a), 0, 1);
-      return t * t * (3 - 2 * t);
-    }
 
     function getScrollTop() {
       const se = document.scrollingElement;
@@ -41,25 +35,21 @@
     // Tunables
     const SKY_SCALE_MAX = 1.14;
 
-    // Animate from panel1 start until HALF of panel2
+    // Animate from panel1 start -> HALF of panel2
     const END_AT_PANEL2_FRACTION = 0.50;
 
-    // Cloud drift multiplier (px)
+    // Clouds
     const DRIFT_X_MULT = 0.46;
-    const DRIFT_Y_MULT = 0.16;
+    const DRIFT_Y_MULT = 0.14;
 
-    // Strong safe zone around std-sky (so no collisions)
-    const SAFE_RADIUS_VMIN = 0.64;
-    const SAFE_RECT_W = 0.66;
-    const SAFE_RECT_H = 0.58;
+    // Safe zone around std-sky
+    const SAFE_RADIUS_VMIN = 0.66;
+    const SAFE_RECT_W = 0.68;
+    const SAFE_RECT_H = 0.60;
 
-    // Lake/crater transforms (same timing as first cloud)
+    // Lake/crater transforms
     const LAKE_SCALE_MAX = 1.25;
     const CRATER_SCALE_MIN = 0.50;
-
-    // std-sky scroll motion
-    const STD_EXIT_Y_VH = 0.52;
-    const STD_SCALE_MIN = 0.90;
 
     const state = {
       layers: []
@@ -82,15 +72,17 @@
         const dir = parseFloat(el.dataset.dir || "1");
         const z = parseInt(el.dataset.z || "1", 10) || 1;
 
-        const sizeMult = (vw <= 480) ? 1.25 : (vw <= 900 ? 1.10 : 1.0);
-        const w = clamp(vw * size * sizeMult, 82, 560);
+        // Mobile: make clouds bigger + pull toward center
+        const isMobile = vw <= 480;
+        const sizeMult = isMobile ? 1.55 : (vw <= 900 ? 1.15 : 1.0);
+
+        const w = clamp(vw * size * sizeMult, 120, 640);
         const h = w * 0.60;
 
         el.style.width = `${Math.round(w)}px`;
         el.style.height = `${Math.round(h)}px`;
         el.style.zIndex = String(Math.min(6, z));
 
-        // alternate vertical drift directions
         const dirY = (i % 3 === 0) ? -1 : 1;
 
         return { el, startX, startY, endX, endY, speed, dir, dirY, z, i };
@@ -100,7 +92,6 @@
     function render() {
       const scrollY = getScrollTop();
 
-      // Compute progress window every frame (robust against layout changes)
       const p1Top = panel1 ? getAbsTop(panel1) : 0;
       const p2Top = panel2 ? getAbsTop(panel2) : window.innerHeight;
       const p2H = panel2 ? panel2.offsetHeight : window.innerHeight;
@@ -110,40 +101,33 @@
 
       if (prefersReducedMotion) return;
 
-      // SKY scales up until half panel2
+      // SKY scales (no opacity animation)
       if (skyBg) {
         const s = 1 + p * (SKY_SCALE_MAX - 1);
         skyBg.style.transform = `scale(${s})`;
-        skyBg.style.opacity = String(1 - smoothstep(0.62, 1.0, p));
       }
 
-      // LAKE replaces sky visually starting around mid span
-      const lakeIn = smoothstep(0.50, 0.88, p);
+      // Lake scales up to 125% (no opacity animation)
       if (lake) {
-        lake.style.opacity = String(lakeIn);
         const ls = 1 + p * (LAKE_SCALE_MAX - 1);
         lake.style.transform = `scale(${ls.toFixed(3)})`;
       }
+
+      // Crater scales down to 50% (no opacity animation)
       if (crater) {
-        crater.style.opacity = String(lakeIn);
         const cs = 1 - p * (1 - CRATER_SCALE_MIN);
         crater.style.transform = `translate3d(-50%, 0, 0) scale(${cs.toFixed(3)})`;
       }
 
-      // std-sky scroll motion (slight up, slight shrink)
-      if (stdWrap) {
-        const yUp = -p * (window.innerHeight * STD_EXIT_Y_VH);
-        const sDown = 1 - p * (1 - STD_SCALE_MIN);
-        stdWrap.style.transform = `translate3d(-50%, -50%, 0) translate3d(0, ${yUp.toFixed(1)}px, 0) scale(${sDown.toFixed(3)})`;
-        stdWrap.style.opacity = String(1 - smoothstep(0.80, 1.0, p));
-      }
-
-      // safe zone in panel1 coordinate space
+      // Safe zone in panel1 space
       const safeR = Math.min(window.innerWidth, window.innerHeight) * SAFE_RADIUS_VMIN;
       const p1W = panel1 ? panel1.clientWidth : window.innerWidth;
       const p1H = panel1 ? panel1.clientHeight : window.innerHeight;
       const sx = p1W * 0.5;
       const sy = p1H * 0.5;
+
+      const isMobile = window.innerWidth <= 480;
+      const centerPull = isMobile ? 0.08 : 0; // pull 8% toward center on mobile
 
       state.layers.forEach((ln) => {
         const el = ln.el;
@@ -152,23 +136,28 @@
         let xPct = ln.startX + (ln.endX - ln.startX) * p;
         let yPct = ln.startY + (ln.endY - ln.startY) * p;
 
+        // pull toward center on mobile (so clouds aren’t off-screen)
+        if (centerPull) {
+          xPct = xPct + (50 - xPct) * centerPull;
+        }
+
         // pct -> px in panel1
         let xPx = (xPct / 100) * p1W;
         let yPx = (yPct / 100) * p1H;
 
-        // keep-out zone
+        // keep-out circle
         const dx = xPx - sx;
         const dy = yPx - sy;
         const dist = Math.sqrt(dx * dx + dy * dy);
-
         if (dist < safeR) {
-          const push = (safeR - dist) + 64;
+          const push = (safeR - dist) + 72;
           const nx = dist === 0 ? 1 : dx / dist;
           const ny = dist === 0 ? 0 : dy / dist;
           xPx += nx * push;
           yPx += ny * push;
         }
 
+        // keep-out rectangle
         const rw = p1W * SAFE_RECT_W;
         const rh = p1H * SAFE_RECT_H;
         const rx0 = sx - rw * 0.5, rx1 = sx + rw * 0.5;
@@ -177,8 +166,8 @@
         if (xPx > rx0 && xPx < rx1 && yPx > ry0 && yPx < ry1) {
           const toLeft = xPx - rx0;
           const toRight = rx1 - xPx;
-          xPx += (toLeft < toRight) ? -(toLeft + 68) : (toRight + 68);
-          yPx += (yPx < sy) ? -18 : 26;
+          xPx += (toLeft < toRight) ? -(toLeft + 78) : (toRight + 78);
+          yPx += (yPx < sy) ? -18 : 28;
         }
 
         // back to pct after push
@@ -196,9 +185,6 @@
         el.style.top = `${yPct}%`;
         el.style.transform =
           `translate3d(-50%, -50%, 0) translate3d(${driftX.toFixed(1)}px, ${(driftY + float).toFixed(1)}px, 0)`;
-
-        // fade as it clears
-        el.style.opacity = String(1 - smoothstep(0.12, 0.98, p));
       });
     }
 
@@ -217,7 +203,7 @@
       });
     }
 
-    // Always-on render loop (fixes “scroll events not firing / scrollY not updating” issues)
+    // Always-on loop
     function loop() {
       render();
       requestAnimationFrame(loop);
@@ -229,7 +215,6 @@
 
     window.addEventListener("resize", () => {
       setupLayers();
-      render();
     }, { passive: true });
   }
 })();
