@@ -16,7 +16,7 @@ body{
   overflow-x:hidden;
 }
 
-/* SKY: fixed behind everything */
+/* SKY */
 .sky-bg{
   position: fixed;
   inset: 0;
@@ -29,25 +29,25 @@ body{
   pointer-events: none;
 }
 
-/* Lake scene pinned at midpoint of viewport */
+/* Lake scene (JS controls visibility + translate/scale) */
 .lake-scene{
   position: fixed;
   left: 50%;
   top: 50%;
-  width: 110vw;                 /* extend sideways safely */
-  height: clamp(260px, 62vh, 760px);
-  transform: translate3d(-50%, -50%, 0) scale(1);
+  width: 120vw; /* extend sideways more */
+  height: clamp(320px, 78vh, 980px); /* taller so it “reaches” through panel 3 */
+  transform: translate3d(-50%, -50%, 0);
   transform-origin: center center;
   will-change: transform;
   z-index: 2;
   pointer-events: none;
-  visibility: hidden;           /* JS toggles (no opacity animation) */
+  visibility: hidden; /* toggled by JS */
 }
 
 @media (max-width: 480px){
   .lake-scene{
-    width: 120vw;               /* a bit more coverage on mobile */
-    height: clamp(320px, 70vh, 820px);
+    width: 132vw;
+    height: clamp(360px, 86vh, 1100px);
   }
 }
 
@@ -63,7 +63,7 @@ body{
 .crater{
   position:absolute;
   left: 50%;
-  top: 0;                       /* top-aligned with lake */
+  top: 0;
   width: 100%;
   height: 100%;
   background: url("assets/parallax/crater.png") no-repeat top center / contain;
@@ -87,8 +87,6 @@ body{
   background: transparent !important;
 }
 
-/* Replace ONLY the std-sky animation block with this smoother one */
-
 /* Save-the-date */
 .std-sky-wrap{
   position:absolute;
@@ -105,12 +103,11 @@ body{
   height: clamp(240px, 52vw, 620px);
   background: url("assets/parallax/std-sky.png") no-repeat center / contain;
   will-change: transform;
-  /* smoother, slower, continuous motion */
   animation: stdFloatSmooth 5.2s linear infinite;
   transform: translate3d(0,0,0);
 }
 
-/* Smooth mirrored loop using a continuous path (no “stop-and-go” beats) */
+/* Smooth mirrored loop */
 @keyframes stdFloatSmooth{
   0%   { transform: translate3d(-14px, -6px, 0) rotate(-0.7deg); }
   12.5%{ transform: translate3d(-7px, -14px, 0) rotate(-0.35deg); }
@@ -123,8 +120,7 @@ body{
   100% { transform: translate3d(-14px, -6px, 0) rotate(-0.7deg); }
 }
 
-
-/* Clouds */
+/* Clouds (NO flips, only translate) */
 .parallax-layer{
   position:absolute;
   left: 50%;
@@ -161,7 +157,7 @@ body{
   object-fit:contain;
 }
 
-/* Map poster pinned in panel 3 */
+/* Map poster */
 .map-poster{
   position:absolute;
   right: 14px;
