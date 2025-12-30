@@ -1,6 +1,7 @@
 // parallax.js
-// Revised: sky-bg extension is used as the clearing span for clouds.
-// Clouds are sized & positioned by data attributes; skyBg length controls clearing progress.
+// Sky scales (single instance) as the user scrolls toward part 3.
+// Clouds are positioned & sized by data attributes in index.html.
+// Cloud clearing progress uses the top of panel-1 -> top of panel-3 span (so clouds clear as sky scales).
 
 (function () {
   if (document.readyState === 'loading') {
@@ -17,10 +18,9 @@
     const disableHeavy = prefersReducedMotion || smallScreen;
 
     const skyBg = document.getElementById('sky-bg');
-    const cloudPanel = document.getElementById('panel-clouds');
-    const contentPanel = document.getElementById('panel-content');
+    const panel1 = document.getElementById('panel-1');
+    const panel3 = document.getElementById('panel-3');
 
-    // collect layers
     const allEls = Array.from(document.querySelectorAll('.parallax-layer'));
     const layers = allEls.map((el) => {
       const bg = el.dataset.bg || '';
@@ -53,13 +53,11 @@
       };
     });
 
-    // setup sizes/positions
     function setupLayers() {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
 
-      // scale factor so clouds are larger on wide desktop, smaller on tablet/mobile
-      let scaleFactor = 1.0;
+      let scaleFactor = 1;
       if (vw >= 1400) scaleFactor = 1.8;
       else if (vw >= 1200) scaleFactor = 1.5;
       else if (vw >= 900) scaleFactor = 1.2;
@@ -67,19 +65,17 @@
 
       layers.forEach((ln) => {
         const { el, bg, size, startX, startY, z } = ln;
-
         if (bg) el.style.backgroundImage = `url("${bg}")`;
         el.style.zIndex = z;
 
-        // compute width based on viewport * size * scale
         const widthPx = Math.round(vw * size * scaleFactor);
         ln.widthPx = Math.max(36, widthPx);
+
         if (bg) {
           const img = new Image();
           img.onload = function () {
             ln.imgRatio = (img.naturalHeight / img.naturalWidth) || ln.imgRatio;
             ln.heightPx = Math.round(ln.widthPx * ln.imgRatio);
-            // compute left/top so center equals startX/startY percent of section
             const parent = ln.el.closest('.parallax-section');
             const rect = parent ? parent.getBoundingClientRect() : { left: 0, top: 0, width: vw, height: vh };
             const sectionLeft = rect.left + window.scrollX;
@@ -115,6 +111,9 @@
           ln.loaded = true;
         }
       });
+
+      // Reset sky scale to 1 on layout (so transform calculations start from base)
+      if (skyBg) skyBg.style.transform = 'scale(1)';
     }
 
     function applySizeAndPos(ln) {
@@ -128,7 +127,6 @@
 
     setupLayers();
 
-    // recompute on resize
     let resizeTimer = null;
     window.addEventListener('resize', function () {
       if (resizeTimer) clearTimeout(resizeTimer);
@@ -138,21 +136,36 @@
       }, 120);
     }, { passive: true });
 
-    // compute clearing progress based on skyBg bottom (so sky image extent controls clearing)
-    function getCloudProgress(scrollY) {
-      if (!cloudPanel || !skyBg) return 0;
-      const cloudTop = cloudPanel.getBoundingClientRect().top + scrollY;
-      const skyBottom = skyBg.getBoundingClientRect().bottom + scrollY;
-      const totalSpan = Math.max(1, skyBottom - cloudTop);
-      return Math.max(0, Math.min(1, (scrollY - cloudTop) / totalSpan));
+    // compute sky scaling progress from top of panel-1 to top of panel-3
+    function getSkyScaleProgress(scrollY) {
+      if (!panel1 || !panel3 || !skyBg) return 0;
+      const start = panel1.getBoundingClientRect().top + scrollY;
+      const end = panel3.getBoundingClientRect().top + scrollY; // scale until start of part 3
+      const span = Math.max(1, end - start);
+      return Math.max(0, Math.min(1, (scrollY - start) / span));
     }
 
-    // RAF loop
+    // compute cloud clearing progress based on same span (clouds clear while sky scales)
+    function getCloudProgress(scrollY) {
+      return getSkyScaleProgress(scrollY);
+    }
+
+    // config: maximum scale factor for sky (1 => no scale; 1.12 => zoom to +12%)
+    const SKY_SCALE_MAX = 1.12;
+
     let ticking = false;
     function update() {
       const vh = window.innerHeight;
       const vw = window.innerWidth;
       const scrollY = window.scrollY || window.pageYOffset;
+
+      // sky scale progress 0..1
+      const skyProgress = getSkyScaleProgress(scrollY);
+      if (skyBg && !disableHeavy) {
+        const s = 1 + skyProgress * (SKY_SCALE_MAX - 1);
+        skyBg.style.transform = `scale(${s})`;
+      }
+
       const cloudProgress = getCloudProgress(scrollY);
 
       layers.forEach((ln) => {
@@ -173,7 +186,7 @@
         }
         const translateYParallax = -norm * speed * 80;
 
-        // horizontal clearing across skyBg span
+        // horizontal clearing across skyProgress
         let translateX = 0;
         if (isCloud && sideSpeed > 0) {
           const sideMax = Math.max(vw * 0.85, 500);
@@ -195,7 +208,7 @@
     }
 
     // pointer parallax (subtle)
-    const hero = cloudPanel;
+    const hero = panel1;
     const supportsPointer = 'onpointermove' in window && !/Mobi|Android/i.test(navigator.userAgent);
     let pointerEnabled = supportsPointer && !disableHeavy && hero;
 
@@ -211,6 +224,7 @@
         if (!ln.isCloud) return;
         const pointerX = dx * ln.speed * maxOffset;
         const pointerY = dy * ln.speed * maxOffset;
+
         // recompute base values and add pointer offsets
         const scrollY = window.scrollY || window.pageYOffset;
         const cloudProgress = getCloudProgress(scrollY);
@@ -234,10 +248,11 @@
       });
     }
 
-    // init
+    // start
     update();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', function () { setupLayers(); update(); }, { passive: true });
+
     if (pointerEnabled) {
       hero.addEventListener('pointermove', onPointer);
       hero.addEventListener('pointerleave', update);
