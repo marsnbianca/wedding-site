@@ -1,7 +1,6 @@
 :root{
   --max-width: 980px;
   --space: 1.25rem;
-
   --panel-height: 100vh;
 }
 
@@ -15,7 +14,7 @@
 /* Base */
 *{box-sizing:border-box}
 html,body{height:100%}
-body {
+body{
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
   color: #04293a;
@@ -26,7 +25,7 @@ body {
 }
 
 /* SKY BACKGROUND: seamless + fixed */
-.sky-bg {
+.sky-bg{
   position: fixed;
   inset: 0;
   width: 100%;
@@ -56,15 +55,8 @@ body {
   z-index: 1;
 }
 
-/* Remove ALL panel background colors */
-.panel-1,
-.panel-2,
-.panel-3,
-.panel-4,
-.panel-5,
-.panel-6 {
-  background: transparent !important;
-}
+/* All panels transparent */
+.panel-1,.panel-2,.panel-3,.panel-4,.panel-5,.panel-6{ background: transparent !important; }
 
 /* Layers */
 .parallax-layer{
@@ -79,50 +71,87 @@ body {
   backface-visibility: hidden;
   pointer-events: none;
 }
-
-.cloud-layer {
+.cloud-layer{
   opacity: 0.98;
   mix-blend-mode: normal;
   z-index: 2;
 }
-
-.parallax-layer--overlay {
+.parallax-layer--overlay{
   mix-blend-mode: overlay;
   opacity: 0.28;
   z-index: 3;
 }
 
-/* std-sky element, centered in panel 1 and always above clouds */
+/* STD SKY (panel 1) */
 .std-sky-wrap{
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate3d(-50%, -50%, 0);
-  z-index: 8;
+  z-index: 9; /* above clouds */
   pointer-events: none;
   will-change: transform, opacity;
 }
-
 .std-sky{
-  width: clamp(220px, 42vw, 520px);
-  height: clamp(220px, 42vw, 520px);
+  width: clamp(240px, 52vw, 600px);
+  height: clamp(240px, 52vw, 600px);
   background-image: url("assets/parallax/std-sky.png");
   background-repeat: no-repeat;
   background-position: center center;
   background-size: contain;
   will-change: transform;
-  animation: stdBreath 6.2s ease-in-out infinite;
+  /* more visible animation: faster + stronger */
+  animation: stdBreath 3.8s ease-in-out infinite;
 }
-
 @keyframes stdBreath{
   0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(0, -10px, 0) scale(1.03); }
+  50%  { transform: translate3d(0, -18px, 0) scale(1.06); }
   100% { transform: translate3d(0, 0, 0) scale(1); }
 }
 
+/* Panel 3 scene (lake + crater aligned at top) */
+.scene-wrap{
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate3d(-50%, 0, 0);
+  width: min(920px, 96vw);
+  height: clamp(220px, 42vh, 520px);
+  z-index: 4;
+  pointer-events: none;
+  will-change: transform;
+}
+.lake{
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("assets/parallax/lake1.png");
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: contain;
+  will-change: transform;
+}
+.crater{
+  position: absolute;
+  top: 0;                 /* top aligned with lake */
+  left: 50%;
+  transform: translate3d(-50%, 0, 0) scale(1);
+  transform-origin: top center;
+  width: 100%;
+  height: 100%;
+  background-image: url("assets/parallax/crater.png");
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: contain;
+  will-change: transform;
+  z-index: 2;
+}
+
 /* Content */
-.container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
-.section-content {
+.container{ max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
+.section-content{
   position: relative;
   z-index: 10;
   text-align: center;
@@ -133,11 +162,10 @@ body {
   align-items:center;
   gap:1rem;
 }
-.section-content h1 { margin:0; font-size: clamp(1.6rem, 4.5vw, 3.25rem); }
-.section-content .lead { margin:0; color:#064a6f; }
+.section-content h1{ margin:0; font-size: clamp(1.6rem, 4.5vw, 3.25rem); }
+.section-content .lead{ margin:0; color:#064a6f; }
 
-/* Buttons */
-.image-button {
+.image-button{
   display:inline-block;
   margin:.5rem auto;
   cursor:pointer;
@@ -149,8 +177,8 @@ body {
 }
 
 /* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .parallax-layer, .sky-bg, .std-sky-wrap, .std-sky {
+@media (prefers-reduced-motion: reduce){
+  .parallax-layer, .sky-bg, .std-sky-wrap, .std-sky, .scene-wrap, .crater {
     animation: none !important;
     transition: none !important;
     transform: none !important;
