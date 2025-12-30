@@ -9,14 +9,19 @@
 </head>
 
 <body>
-  <!-- PANEL 1: CLOUDS (sky ombre) -->
+  <!-- Extended sky background: uses sky1.png and spans panels 1-2 and ~10% of panel 3.
+       This DIV is full-bleed and placed before panels so clouds and other layers appear on top.
+  -->
+  <div id="sky-bg" class="sky-bg" aria-hidden="true"></div>
+
+  <!-- PANEL 1: CLOUDS -->
   <section class="parallax-section panel-clouds" id="panel-clouds" aria-label="Clouds">
-    <!-- cloud layers in panel 1 (scattered start positions; data attributes control placement & speed) -->
+    <!-- scattered clouds -->
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud1.png"
-         data-start-x="5"      <!-- percent of panel width (0..100), cloud center -->
-         data-start-y="8"      <!-- percent of panel height (0..100), cloud center -->
-         data-size="0.16"      <!-- fraction of viewport width (e.g. 0.16 = 16%) -->
+         data-start-x="5"
+         data-start-y="8"
+         data-size="0.16"
          data-side-speed="0.65"
          data-dir="-1"
          data-z="3"
@@ -43,9 +48,8 @@
          aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 2: SKY TRANSITION (more scattered clouds across panel 2) -->
+  <!-- PANEL 2: SKY TRANSITION -->
   <section class="parallax-section panel-sky" id="panel-sky" aria-label="Sky transition">
-    <!-- additional cloud layers with different positions / sizes -->
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud4.png"
          data-start-x="10"
@@ -66,11 +70,10 @@
          data-z="5"
          aria-hidden="true"></div>
 
-    <!-- subtle sky layer to help the gradient transition -->
     <div class="parallax-layer" data-speed="0.02" data-bg="" aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 3: CONTENT (ombre sky to content) -->
+  <!-- PANEL 3: CONTENT (clouds still visible through first ~10% of this panel due to sky-bg extension) -->
   <section class="parallax-section panel-content" id="panel-content" aria-label="Welcome">
     <div class="parallax-layer parallax-layer--overlay" data-speed="0.18" data-bg="" aria-hidden="true"></div>
 
@@ -102,11 +105,26 @@
     </div>
   </section>
 
-  <!-- MAIN content (non-parallax) -->
+  <!-- ADDITIONAL LONG PARTS (so page is a very long single page) -->
+  <section class="parallax-section panel-long" id="panel-4" aria-label="More">
+    <div class="section-content container">
+      <h2>Details & Schedule</h2>
+      <p class="lead">More content here — accommodations, travel, registry, etc.</p>
+    </div>
+  </section>
+
+  <section class="parallax-section panel-long" id="panel-5" aria-label="More content">
+    <div class="section-content container">
+      <h2>Registry</h2>
+      <p class="lead">Add your registry links and other event information here.</p>
+    </div>
+  </section>
+
+  <!-- MAIN content (traditional below the panels) -->
   <main class="container page-content">
-    <h2 id="details">Details</h2>
+    <h2 id="details">Full Details</h2>
     <p>Parallax sections above are decorative — add your text, photos, registry, etc. below.</p>
-    <p style="height: 800px;">(Page body content placeholder — scroll to test parallax/cloud clearing.)</p>
+    <p style="height: 900px;">(Page body content placeholder — scroll to test parallax/cloud clearing.)</p>
     <footer>
       <small>© Mars & Bianca</small>
     </footer>
