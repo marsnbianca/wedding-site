@@ -1,11 +1,3 @@
-// parallax.js (full replacement)
-// Updates requested:
-// - Panel 1 cloud positions and speeds updated in HTML
-// - Remove cloud #7 (done in HTML)
-// - Stronger keep-out zone around std-sky1.png to keep center clear
-// - Panel 2 lake/crater animate immediately as you enter panel 2 (not late)
-// - Map poster is non-modal and animates in place (toggle on button)
-
 (function () {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
@@ -73,10 +65,6 @@
       return clamp((scrollY - aTop) / span, 0, 1);
     }
 
-    function progressWithinPanel(scrollY, top, height) {
-      return clamp((scrollY - top) / Math.max(1, height), 0, 1);
-    }
-
     function setup() {
       state.vw = window.innerWidth;
       state.vh = window.innerHeight;
@@ -110,7 +98,7 @@
           ? num(el, "endY", startY)
           : startY;
 
-        // lower clouds drift down, never up (std-sky moves upward)
+        // lower clouds drift down, never up
         if (startY >= 55) endY = Math.max(endY, startY + 14);
         else endY = Math.min(endY, startY - 8);
 
@@ -125,77 +113,76 @@
 
         const floatAmp = clamp(10 + (idx % 6) * 2 + z, 10, 26);
 
-        // fade window (kept broad)
-        const fadeStart = 0.04 + clamp(z * 0.02, 0, 0.20);
-        const fadeEnd = 0.90 + clamp(sideSpeed * 0.05, 0, 0.16);
-
-        return { el, startX, startY, endX, endY, dir, sideSpeed, z, floatAmp, fadeStart, fadeEnd };
+        return { el, startX, startY, endX, endY, dir, sideSpeed, z, floatAmp };
       });
 
       if (skyBg) { skyBg.style.transform = "scale(1)"; skyBg.style.opacity = "1"; }
       if (stdWrap) { stdWrap.style.opacity = "1"; stdWrap.style.transform = "translate3d(-50%, -50%, 0)"; }
-
       if (lake) lake.style.transform = "scale(1)";
       if (crater) crater.style.transform = "translate3d(-50%, 0, 0) scale(1)";
     }
 
     // Tunables
-    const SKY_SCALE_MAX = 1.14;
+    const SKY_SCALE_MAX = 1.12;
 
     const STD_EXIT_Y_VH = 0.95;
-    const STD_SCALE_MIN = 0.64;
+    const STD_SCALE_MIN = 0.66;
 
-    // Make center of panel 1 much clearer
-    const SAFE_RADIUS_VMIN = 0.52;  // larger circle
-    const SAFE_RECT_W_VW = 0.50;    // larger rectangle keep-out
-    const SAFE_RECT_H_VH = 0.44;
+    // Strong keep-out zone (clear center)
+    const SAFE_RADIUS_VMIN = 0.56;
+    const SAFE_RECT_W_VW = 0.56;
+    const SAFE_RECT_H_VH = 0.48;
 
-    const CLOUD_EXTRA_DRIFT_VW = 0.32;
+    const CLOUD_EXTRA_DRIFT_VW = 0.34;
 
-    // Panel 2 scene targets
+    // Lake/crater targets
     const LAKE_SCALE_MAX = 1.25;
     const CRATER_SCALE_MIN = 0.50;
 
     function render() {
-      const scrollY = window.scrollY || window.pageYOffset;
-
       if (prefersReducedMotion) return;
 
-      // Sky scales and fades out by halfway through panel 2
+      const scrollY = window.scrollY || window.pageYOffset;
+
+      // Sky scale + fade: panel1 -> half panel2 (restored behavior)
       const pSky = progressBetween(scrollY, state.p1Top, state.p2HalfTop);
       if (skyBg) {
         const s = 1 + pSky * (SKY_SCALE_MAX - 1);
         skyBg.style.transform = `scale(${s})`;
-        const skyFade = 1 - smoothstep(0.82, 1.00, pSky);
+
+        // fades later so it stays visible through panel 1 and into panel 2
+        const skyFade = 1 - smoothstep(0.75, 1.00, pSky);
         skyBg.style.opacity = String(skyFade);
       }
 
-      // std-sky scroll movement: panel1 -> panel3
-      const pStd = progressBetween(scrollY, state.p1Top, state.p3Top);
+      // Clouds start moving immediately and finish clearing by panel2 start
+      const pCloud = progressBetween(scrollY, state.p1Top, state.p2Top);
+
+      // Lake/crater: start at SAME scroll as first cloud, finish early in panel2
+      // End point: about 55% into panel2 (feels “immediate”)
+      const pScene = progressBetween(scrollY, state.p1Top, state.p2Top + state.p2Height * 0.55);
+
+      // std-sky: move up as you scroll toward panel 2 (keeps center clean)
       if (stdWrap) {
-        const yUp = -pStd * (state.vh * STD_EXIT_Y_VH);
-        const sDown = 1 - pStd * (1 - STD_SCALE_MIN);
-        const fade = 1 - smoothstep(0.60, 0.98, pStd);
+        const yUp = -pCloud * (state.vh * STD_EXIT_Y_VH);
+        const sDown = 1 - pCloud * (1 - STD_SCALE_MIN);
+        const fade = 1 - smoothstep(0.55, 0.98, pCloud);
         stdWrap.style.opacity = String(fade);
         stdWrap.style.transform =
           `translate3d(-50%, -50%, 0) translate3d(0, ${yUp.toFixed(1)}px, 0) scale(${sDown.toFixed(3)})`;
       }
 
-      // Panel 2 scene: start immediately as you enter panel 2
-      const p2 = progressWithinPanel(scrollY, state.p2Top, state.p2Height);
+      // Lake/crater scaling (starts immediately)
       if (lake) {
-        const lakeScale = 1 + p2 * (LAKE_SCALE_MAX - 1);
+        const lakeScale = 1 + pScene * (LAKE_SCALE_MAX - 1);
         lake.style.transform = `scale(${lakeScale.toFixed(3)})`;
       }
       if (crater) {
-        const craterScale = 1 - p2 * (1 - CRATER_SCALE_MIN);
+        const craterScale = 1 - pScene * (1 - CRATER_SCALE_MIN);
         crater.style.transform = `translate3d(-50%, 0, 0) scale(${craterScale.toFixed(3)})`;
       }
 
-      // Cloud progress clears by start of panel 2 (so they move earlier and avoid std-sky)
-      // This makes the movement happen right away, not waiting until panel 3.
-      const pCloud = progressBetween(scrollY, state.p1Top, state.p2Top);
-
+      // Keep-out zone for panel 1 center
       const vmin = Math.min(state.vw, state.vh);
       const safeR = vmin * SAFE_RADIUS_VMIN;
 
@@ -210,10 +197,9 @@
         let x = (xPct / 100) * rect.width;
         let y = (yPct / 100) * rect.height;
 
-        const depthBoost = clamp(0.92 + ln.z * 0.04, 0.9, 1.45);
+        const depthBoost = clamp(0.92 + ln.z * 0.05, 0.9, 1.55);
         const extraDrift = ln.dir * ln.sideSpeed * depthBoost * pCloud * (state.vw * CLOUD_EXTRA_DRIFT_VW);
-
-        const floatY = (Math.sin((pCloud * 2.0 + idx) * Math.PI) * 0.6 - pCloud) * ln.floatAmp;
+        const floatY = (Math.sin((pCloud * 2.0 + idx) * Math.PI) * 0.55 - pCloud) * ln.floatAmp;
 
         if (parent && parent.id === "panel-1") {
           const sx = rect.width * 0.5;
@@ -224,15 +210,15 @@
           const dy = y - sy;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < safeR) {
-            const push = (safeR - dist) + 34;
+            const push = (safeR - dist) + 38;
             const nx = dist === 0 ? 1 : dx / dist;
             const ny = dist === 0 ? 0 : dy / dist;
-            const belowBias = ln.startY >= 55 ? 1.65 : 1.0;
+            const belowBias = ln.startY >= 55 ? 1.7 : 1.0;
             x += nx * push;
             y += ny * push * belowBias;
           }
 
-          // Rectangle keep-out (strong)
+          // Rectangle keep-out (prevents “transparent area cover”)
           const rectW = rect.width * SAFE_RECT_W_VW;
           const rectH = rect.height * SAFE_RECT_H_VH;
           const rx0 = sx - rectW * 0.5;
@@ -243,21 +229,21 @@
           if (x > rx0 && x < rx1 && y > ry0 && y < ry1) {
             const toLeft = x - rx0;
             const toRight = rx1 - x;
-            const pushX = toLeft < toRight ? -(toLeft + 34) : (toRight + 34);
-            const pushY = (y < sy) ? -18 : 22;
+            const pushX = toLeft < toRight ? -(toLeft + 40) : (toRight + 40);
+            const pushY = (y < sy) ? -20 : 26;
             x += pushX;
             y += pushY;
           }
 
-          // Lower clouds never rise into std-sky zone
+          // lower clouds never rise into center
           if (ln.startY >= 55) {
-            y = Math.max(y, sy + safeR * 0.78);
+            y = Math.max(y, sy + safeR * 0.82);
           }
         }
 
-        // fade but keep visible
-        const fadeT = smoothstep(ln.fadeStart, ln.fadeEnd, pCloud);
-        el.style.opacity = String(1 - fadeT);
+        // Light fade so they don’t just sit there
+        const opacity = 1 - smoothstep(0.08, 0.98, pCloud);
+        el.style.opacity = String(opacity);
 
         el.style.left = `${Math.round(rect.left + window.scrollX)}px`;
         el.style.top = `${Math.round(rect.top + window.scrollY)}px`;
@@ -267,7 +253,7 @@
       });
     }
 
-    // Map poster: toggle in-place (not modal)
+    // Map poster toggle (smooth show/hide via CSS transition)
     function toggleMapPoster() {
       if (!mapPoster) return;
       mapPoster.classList.toggle("is-shown");
