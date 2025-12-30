@@ -1,94 +1,82 @@
 :root{
   --max-width: 980px;
   --space: 1.25rem;
-  --accent: #b86b9d;
-  --text-dark: #04293a;
-  --panel-height: 100vh;
+
+  /* panel height variable */
+  --panel-height: 100vh;   /* desktop default */
+  --sky-span-multiplier: 3.05; /* how many panels the sky-bg conceptually covers */
 }
 
-/* Reset / base */
+/* responsive overrides */
+@media (max-width: 900px) {
+  :root { --panel-height: 80vh; --sky-span-multiplier: 3.02; }
+}
+@media (max-width: 480px) {
+  :root { --panel-height: 60vh; --sky-span-multiplier: 3.0; }
+}
+
+/* Base */
 *{box-sizing:border-box}
 html,body{height:100%}
 body {
   margin: 0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-  color: var(--text-dark);
+  color: #04293a;
+  background: #071428;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
-  background: linear-gradient(180deg,#071428 0%, #071428 100%);
   overflow-x: hidden;
 }
 
-/* Extended sky background (uses sky1.png). 
-   Height set to cover panel 1 + panel 2 + ~10% of panel 3.
-   Adjusted per breakpoint below.
+/* SKY BACKGROUND: single appearance, animates scale via JS.
+   No repeat; background covers and is centered. Transform-origin top center so it scales downward as requested.
 */
 .sky-bg {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 210vh; /* default: 100vh + 100vh + 10vh = 210vh */
+  height: calc(var(--panel-height) * var(--sky-span-multiplier)); /* cover first ~3 panels */
   background-image: url("assets/parallax/sky1.png");
+  background-repeat: no-repeat;
   background-size: cover;
   background-position: center top;
+  transform-origin: center top;
+  will-change: transform;
   z-index: 0;
   pointer-events: none;
 }
 
-/* On medium screens where panels may be 70vh, set sky-bg accordingly */
-@media (max-width: 900px) {
-  .sky-bg { height: 147vh; } /* 70vh + 70vh + 7vh = 147vh */
-}
-@media (max-width: 480px) {
-  .sky-bg { height: 126vh; } /* 60vh + 60vh + 6vh = 126vh */
-}
-
-/* Centered content container used only for textual content */
-.container {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: calc(var(--space) + 4vw);
-}
-
-/* Generic parallax panel styles (full bleed) */
+/* Parallax sections sizing uses variable and caps max height */
 .parallax-section{
   position: relative;
   width: 100%;
   height: var(--panel-height);
-  min-height: 360px;
-  overflow: visible; /* allow clouds to move off-screen */
+  min-height: 35vh;
+  max-height: calc(var(--panel-height) * 1.25);
+  overflow: visible;
   display: flex;
   align-items: center;
   justify-content: center;
   isolation: isolate;
 }
 
-/* Ombré sky gradients for panels (blend visually with sky-bg) */
-.panel-clouds {
-  background: linear-gradient(180deg,
-    rgba(230,249,255,0.7) 0%,
-    rgba(216,242,255,0.6) 30%,
-    rgba(191,233,255,0.55) 60%,
-    rgba(179,226,255,0.5) 100%);
+/* PART background colors:
+   - Parts 1 & 2 have subtle ombre to blend with the sky.
+   - Parts 3+ are transparent (no background colors) as requested.
+*/
+.panel-1 { background: linear-gradient(180deg, rgba(230,249,255,0.8), rgba(191,233,255,0.5)); }
+.panel-2 { background: linear-gradient(180deg, rgba(216,242,255,0.6), rgba(169,221,255,0.45)); }
+
+/* parts 3 and onward: remove backgrounds — make transparent so content sits on top of scaled sky */
+.panel-3,
+.panel-4,
+.panel-5,
+.panel-6 {
+  background: transparent;
 }
 
-.panel-sky {
-  background: linear-gradient(180deg,
-    rgba(216,242,255,0.45) 0%,
-    rgba(196,231,255,0.45) 30%,
-    rgba(169,221,255,0.45) 65%,
-    rgba(143,207,247,0.45) 100%);
-}
-
-.panel-content {
-  background: linear-gradient(180deg,
-    rgba(207,238,255,0.35) 0%,
-    rgba(230,247,255,0.3) 45%,
-    rgba(247,251,255,0.2) 100%);
-}
-
-/* Parallax layers (clouds and other decorative layers) - JS controls size/position */
+/* Parallax layers (clouds & decorative) — JS sets exact position & size */
 .parallax-layer{
   position: absolute;
   top: 0;
@@ -99,95 +87,32 @@ body {
   background-size: contain;
   will-change: transform;
   backface-visibility: hidden;
-  z-index: 1; /* clouds and decorative layers sit above sky-bg */
+  z-index: 1;
   pointer-events: none;
 }
+.cloud-layer { opacity: 0.98; mix-blend-mode: normal; }
+.parallax-layer--overlay { mix-blend-mode: overlay; opacity: 0.28; z-index: 3; }
 
-/* Cloud layers default rules */
-.cloud-layer {
-  opacity: 0.98;
-  mix-blend-mode: normal;
-}
+/* content styling */
+.container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
+.section-content { position: relative; z-index: 10; text-align: center; color: #04293a; padding: 2rem; display:flex; flex-direction:column; align-items:center; gap:1rem; }
+.section-content h1 { margin:0; font-size: clamp(1.6rem, 4.5vw, 3.25rem); }
+.section-content .lead { margin:0; color:#064a6f; }
 
-/* overlay */
-.parallax-layer--overlay{
-  mix-blend-mode: overlay;
-  opacity: 0.28;
-  z-index: 3;
-}
+/* image buttons */
+.image-button { display:inline-block; margin:.5rem auto; cursor:pointer; border:0; background:transparent; width:auto; height: clamp(3.5rem, 8vh, 5rem); object-fit:contain; }
 
-/* Foreground content */
-.section-content{
-  position: relative;
-  z-index: 10;
-  text-align: center;
-  color: var(--text-dark);
-  max-width: calc(var(--max-width) - 2rem);
-  padding: 2rem;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.section-content h1 {
-  margin: 0;
-  font-size: clamp(1.6rem, 4.5vw, 3.25rem);
-  color: var(--text-dark);
-}
-.section-content .lead {
-  margin: 0;
-  font-size: clamp(1rem, 1.6vw, 1.1rem);
-  color: #064a6f;
-}
-
-/* Image buttons */
-.image-button {
-  display: inline-block;
-  margin: 0.5rem auto;
-  cursor: pointer;
-  border: 0;
-  background: transparent;
-  outline: none;
-  -webkit-tap-highlight-color: transparent;
-
-  width: auto;
-  height: clamp(3.5rem, 8vh, 5rem);
-  object-fit: contain;
-  max-width: 90%;
-}
-
-/* Focus styles */
-.image-button:focus {
-  box-shadow: 0 0 0 4px rgba(184,107,157,0.18);
-  border-radius: 6px;
-}
-
-/* page content (below parallax panels) */
-.page-content {
-  background: transparent;
-  color: #fff;
-  padding-top: 2rem;
-  padding-bottom: 4rem;
-}
-footer small { color: #bfcbd6; }
-
-/* Responsive adjustments */
+/* responsive tweaks */
 @media (max-width: 900px) {
-  :root { --panel-height: 70vh; }
-  .parallax-section{ min-height: 420px; }
-
-  .section-content { padding: 1rem; }
-  .image-button { height: clamp(3rem, 9vh, 4.5rem); }
+  .parallax-section { min-height: 32vh; max-height: calc(var(--panel-height) * 1.15); }
+  .sky-bg { height: calc(var(--panel-height) * var(--sky-span-multiplier)); } /* re-evaluated by CSS var */
 }
-
 @media (max-width: 480px) {
-  :root { --panel-height: 60vh; }
-  .image-button { height: clamp(2.6rem, 10vh, 4rem); }
+  .parallax-section { min-height: 28vh; max-height: calc(var(--panel-height) * 1.1); }
+  .sky-bg { height: calc(var(--panel-height) * var(--sky-span-multiplier)); }
 }
 
-/* Respect prefers-reduced-motion */
+/* reduced motion fallback */
 @media (prefers-reduced-motion: reduce) {
-  .parallax-layer { transition: none !important; transform: none !important; background-position: center 50% !important; }
+  .parallax-layer, .sky-bg { transition: none !important; transform: none !important; }
 }
