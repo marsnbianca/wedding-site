@@ -87,6 +87,8 @@ body{
   background: transparent !important;
 }
 
+/* Replace ONLY the std-sky animation block with this smoother one */
+
 /* Save-the-date */
 .std-sky-wrap{
   position:absolute;
@@ -97,22 +99,30 @@ body{
   pointer-events:none;
   will-change: transform;
 }
+
 .std-sky{
   width: clamp(240px, 52vw, 620px);
   height: clamp(240px, 52vw, 620px);
   background: url("assets/parallax/std-sky.png") no-repeat center / contain;
   will-change: transform;
-  animation: stdFloatMirror 2.6s ease-in-out infinite;
+  /* smoother, slower, continuous motion */
+  animation: stdFloatSmooth 5.2s linear infinite;
+  transform: translate3d(0,0,0);
 }
 
-/* left -> center -> right -> center -> left */
-@keyframes stdFloatMirror{
-  0%   { transform: translate3d(-14px, -6px, 0) rotate(-1deg); }
+/* Smooth mirrored loop using a continuous path (no “stop-and-go” beats) */
+@keyframes stdFloatSmooth{
+  0%   { transform: translate3d(-14px, -6px, 0) rotate(-0.7deg); }
+  12.5%{ transform: translate3d(-7px, -14px, 0) rotate(-0.35deg); }
   25%  { transform: translate3d(0px, -18px, 0) rotate(0deg); }
-  50%  { transform: translate3d(14px, -6px, 0) rotate(1deg); }
-  75%  { transform: translate3d(0px, -18px, 0) rotate(0deg); }
-  100% { transform: translate3d(-14px, -6px, 0) rotate(-1deg); }
+  37.5%{ transform: translate3d(7px, -14px, 0) rotate(0.35deg); }
+  50%  { transform: translate3d(14px, -6px, 0) rotate(0.7deg); }
+  62.5%{ transform: translate3d(7px, 0px, 0) rotate(0.35deg); }
+  75%  { transform: translate3d(0px, -6px, 0) rotate(0deg); }
+  87.5%{ transform: translate3d(-7px, 0px, 0) rotate(-0.35deg); }
+  100% { transform: translate3d(-14px, -6px, 0) rotate(-0.7deg); }
 }
+
 
 /* Clouds */
 .parallax-layer{
