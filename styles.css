@@ -24,7 +24,7 @@ body{
   height: 100%;
   background: url("assets/parallax/sky1.png") no-repeat center top / cover;
   transform-origin: center top;
-  will-change: transform, opacity;
+  will-change: transform;
   z-index: 0;
   pointer-events: none;
 }
@@ -52,19 +52,23 @@ body{
   transform: translate3d(-50%, -50%, 0);
   z-index: 10;
   pointer-events:none;
-  will-change: transform, opacity;
+  will-change: transform;
 }
 .std-sky{
   width: clamp(240px, 52vw, 620px);
   height: clamp(240px, 52vw, 620px);
   background: url("assets/parallax/std-sky.png") no-repeat center / contain;
   will-change: transform;
-  animation: stdFloat 2.0s ease-in-out infinite;
+  animation: stdFloatMirror 2.6s ease-in-out infinite;
 }
-@keyframes stdFloat{
-  0%   { transform: translate3d(-8px, 0, 0) rotate(-0.8deg); }
-  50%  { transform: translate3d(8px, -18px, 0) rotate(0.8deg); }
-  100% { transform: translate3d(-8px, 0, 0) rotate(-0.8deg); }
+
+/* Mirrored float: left -> center -> right -> center -> left */
+@keyframes stdFloatMirror{
+  0%   { transform: translate3d(-12px, -6px, 0) rotate(-1deg); }
+  25%  { transform: translate3d(0px, -18px, 0) rotate(0deg); }
+  50%  { transform: translate3d(12px, -6px, 0) rotate(1deg); }
+  75%  { transform: translate3d(0px, -18px, 0) rotate(0deg); }
+  100% { transform: translate3d(-12px, -6px, 0) rotate(-1deg); }
 }
 
 /* Clouds */
@@ -76,34 +80,27 @@ body{
   background-repeat:no-repeat;
   background-position:center;
   background-size:contain;
-  will-change: transform, opacity;
+  will-change: transform;
   pointer-events:none;
   z-index: 2;
 }
 .cloud-layer{ opacity: .98; }
 
-/* Panel 2: absolute layer so RSVP stays centered */
-.scene2-layer{
-  position: absolute;
-  inset: 0;
+/* Panel 2: lake/crater pinned at TOP */
+.scene2-top{
+  position:absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: clamp(260px, 55vh, 680px);
   z-index: 2;
   pointer-events: none;
+  overflow: hidden;
 }
 
-/* sticky scene centered vertically */
-.scene2-sticky{
-  position: sticky;
-  top: 50vh;
-  transform: translate3d(0, -50%, 0);
-  width: 100vw;
-  height: clamp(260px, 60vh, 720px);
-}
-
-/* Mobile: push the scene up so the starting edge is not visible */
 @media (max-width: 480px){
-  .scene2-sticky{
-    top: 55vh;
-    height: clamp(300px, 66vh, 760px);
+  .scene2-top{
+    height: clamp(260px, 62vh, 720px);
   }
 }
 
@@ -113,8 +110,9 @@ body{
   inset: 0;
   background: url("assets/parallax/lake1.png") no-repeat center / cover;
   transform-origin: center center;
-  will-change: transform, opacity;
-  opacity: 0;
+  will-change: transform;
+  transform: scale(1);
+  opacity: 1;
 }
 
 /* Crater top-aligned to lake */
@@ -127,8 +125,8 @@ body{
   background: url("assets/parallax/crater.png") no-repeat top center / contain;
   transform: translate3d(-50%, 0, 0) scale(1);
   transform-origin: top center;
-  will-change: transform, opacity;
-  opacity: 0;
+  will-change: transform;
+  opacity: 1;
 }
 
 /* Content */
