@@ -9,126 +9,78 @@
 </head>
 
 <body>
-  <!-- Extended sky background: uses sky1.png and spans panels 1-2 and ~10% of panel 3.
-       This DIV is full-bleed and placed before panels so clouds and other layers appear on top.
-  -->
+  <!-- Single-instance sky background (appears once). -->
   <div id="sky-bg" class="sky-bg" aria-hidden="true"></div>
 
-  <!-- PANEL 1: CLOUDS -->
-  <section class="parallax-section panel-clouds" id="panel-clouds" aria-label="Clouds">
-    <!-- scattered clouds -->
+  <!-- PART 1: CLOUDS (decorative) -->
+  <section class="parallax-section panel-1" id="panel-1" aria-label="Part 1 - Clouds">
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud1.png"
-         data-start-x="5"
-         data-start-y="8"
-         data-size="0.16"
-         data-side-speed="0.65"
-         data-dir="-1"
-         data-z="3"
-         aria-hidden="true"></div>
+         data-start-x="6" data-start-y="10" data-size="0.18"
+         data-side-speed="0.65" data-dir="-1" data-z="4" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud2.png"
-         data-start-x="55"
-         data-start-y="18"
-         data-size="0.14"
-         data-side-speed="0.50"
-         data-dir="1"
-         data-z="2"
-         aria-hidden="true"></div>
+         data-start-x="60" data-start-y="18" data-size="0.16"
+         data-side-speed="0.45" data-dir="1" data-z="3" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud3.png"
-         data-start-x="30"
-         data-start-y="2"
-         data-size="0.18"
-         data-side-speed="0.80"
-         data-dir="-1"
-         data-z="4"
-         aria-hidden="true"></div>
+         data-start-x="30" data-start-y="2" data-size="0.20"
+         data-side-speed="0.80" data-dir="-1" data-z="5" aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 2: SKY TRANSITION -->
-  <section class="parallax-section panel-sky" id="panel-sky" aria-label="Sky transition">
+  <!-- PART 2: SKY TRANSITION -->
+  <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - Sky">
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud4.png"
-         data-start-x="10"
-         data-start-y="55"
-         data-size="0.15"
-         data-side-speed="0.40"
-         data-dir="1"
-         data-z="1"
-         aria-hidden="true"></div>
+         data-start-x="12" data-start-y="60" data-size="0.14"
+         data-side-speed="0.40" data-dir="1" data-z="2" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud5.png"
-         data-start-x="70"
-         data-start-y="35"
-         data-size="0.12"
-         data-side-speed="0.95"
-         data-dir="-1"
-         data-z="5"
-         aria-hidden="true"></div>
-
-    <div class="parallax-layer" data-speed="0.02" data-bg="" aria-hidden="true"></div>
+         data-start-x="72" data-start-y="34" data-size="0.12"
+         data-side-speed="0.95" data-dir="-1" data-z="6" aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 3: CONTENT (clouds still visible through first ~10% of this panel due to sky-bg extension) -->
-  <section class="parallax-section panel-content" id="panel-content" aria-label="Welcome">
+  <!-- PART 3: SKY CONTINUE (sky scales up until this panel's start) -->
+  <section class="parallax-section panel-3" id="panel-3" aria-label="Part 3 - Sky continue">
+    <!-- intentionally no panel background color here (see styles.css) -->
+  </section>
+
+  <!-- PART 4: MAIN CONTENT (Mars & Bianca + RSVP) -->
+  <section class="parallax-section panel-4" id="panel-4" aria-label="Part 4 - Welcome">
     <div class="parallax-layer parallax-layer--overlay" data-speed="0.18" data-bg="" aria-hidden="true"></div>
 
     <div class="section-content container">
       <h1>Mars & Bianca</h1>
       <p class="lead">We're getting married — join us</p>
 
-      <!-- RSVP image button: legacy attributes kept for overlay compatibility -->
-      <img
-        id="rsvp-trigger"
-        class="image-button rsvp-btn"
-        src="assets/buttons/RSVP1.PNG"
-        alt="RSVP"
-        title="openRSVP"
-        aria-label="openRSVP"
-        role="button"
-        tabindex="0"
-      />
+      <img id="rsvp-trigger" class="image-button rsvp-btn"
+           src="assets/buttons/RSVP1.PNG" alt="RSVP" title="openRSVP" aria-label="openRSVP"
+           role="button" tabindex="0" />
 
-      <!-- Map button -->
-      <img
-        id="map-trigger"
-        class="image-button"
-        src="assets/buttons/MAP1.PNG"
-        alt="Map"
-        role="button"
-        tabindex="0"
-      />
+      <img id="map-trigger" class="image-button"
+           src="assets/buttons/MAP1.PNG" alt="Map" role="button" tabindex="0" />
     </div>
   </section>
 
-  <!-- ADDITIONAL LONG PARTS (so page is a very long single page) -->
-  <section class="parallax-section panel-long" id="panel-4" aria-label="More">
+  <!-- PART 5: DETAILS -->
+  <section class="parallax-section panel-5" id="panel-5" aria-label="Part 5 - Details">
     <div class="section-content container">
       <h2>Details & Schedule</h2>
-      <p class="lead">More content here — accommodations, travel, registry, etc.</p>
+      <p>Accommodations, timing, directions, etc.</p>
     </div>
   </section>
 
-  <section class="parallax-section panel-long" id="panel-5" aria-label="More content">
+  <!-- PART 6: REGISTRY / FOOTER -->
+  <section class="parallax-section panel-6" id="panel-6" aria-label="Part 6 - Registry">
     <div class="section-content container">
       <h2>Registry</h2>
-      <p class="lead">Add your registry links and other event information here.</p>
+      <p>Links and thanks.</p>
+      <footer><small>© Mars & Bianca</small></footer>
     </div>
   </section>
-
-  <!-- MAIN content (traditional below the panels) -->
-  <main class="container page-content">
-    <h2 id="details">Full Details</h2>
-    <p>Parallax sections above are decorative — add your text, photos, registry, etc. below.</p>
-    <p style="height: 900px;">(Page body content placeholder — scroll to test parallax/cloud clearing.)</p>
-    <footer>
-      <small>© Mars & Bianca</small>
-    </footer>
-  </main>
 
   <!-- Scripts -->
   <script src="parallax.js" defer></script>
