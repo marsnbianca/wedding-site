@@ -1,10 +1,8 @@
 // parallax.js (replacement)
-// Clouds:
-// - start-x/start-y are 0..100 (%) within their own panel
-// - size is base fraction of viewport width, scaled by screen breakpoint multipliers
-// - side drift + fade out from panel-1 top to panel-3 top
-// Sky:
-// - fixed background, scales up from panel-1 top to panel-3 top
+// - sky-bg scales up from panel-1 top to panel-3 top
+// - clouds animate start -> end positions + drift + fade over same progress
+// - std-sky (in panel-1) breathes via CSS, and on scroll moves upward + scales down
+// - cloud sizes differ across breakpoints
 
 (function () {
   if (document.readyState === "loading") {
@@ -22,6 +20,8 @@
     const panel1 = document.getElementById("panel-1");
     const panel3 = document.getElementById("panel-3");
 
+    const stdWrap = document.getElementById("std-sky-wrap");
+
     const cloudEls = Array.from(document.querySelectorAll(".cloud-layer"));
 
     const state = {
@@ -29,9 +29,8 @@
       vh: window.innerHeight,
       p1Top: 0,
       p3Top: 1,
-      layers: [],
       sizeMult: 1.0,
-      driftMult: 1.0,
+      layers: [],
     };
 
     function clamp(n, min, max) {
@@ -43,7 +42,7 @@
       return t * t * (3 - 2 * t);
     }
 
-    function num(el, key, fallback) {
+    function numFromDataset(el, key, fallback) {
       const v = parseFloat(el.dataset[key]);
       return Number.isFinite(v) ? v : fallback;
     }
@@ -53,108 +52,111 @@
       return window.scrollY + r.top;
     }
 
-    function computeBreakpoints() {
+    function computeSizeMult() {
       const vw = window.innerWidth;
-
-      // Cloud sizing per device:
-      // - mobile: larger clouds so they still feel present
-      // - tablet: medium
-      // - desktop: baseline
-      if (vw <= 480) {
-        state.sizeMult = 1.25;
-        state.driftMult = 0.90; // less drift on tiny screens
-      } else if (vw <= 900) {
-        state.sizeMult = 1.10;
-        state.driftMult = 0.95;
-      } else if (vw >= 1400) {
-        state.sizeMult = 1.08; // big screens get a slight bump
-        state.driftMult = 1.05;
-      } else {
-        state.sizeMult = 1.0;
-        state.driftMult = 1.0;
-      }
+      if (vw <= 480) return 1.28;     // mobile bigger
+      if (vw <= 900) return 1.12;     // tablet
+      if (vw >= 1400) return 1.06;    // very large screens slight bump
+      return 1.0;                      // desktop baseline
     }
 
-    // Progress from top of panel 1 to top of panel 3
     function getProgress(scrollY) {
       const span = Math.max(1, state.p3Top - state.p1Top);
       return clamp((scrollY - state.p1Top) / span, 0, 1);
     }
 
-    function setupLayers() {
+    function setup() {
       state.vw = window.innerWidth;
       state.vh = window.innerHeight;
-
-      computeBreakpoints();
+      state.sizeMult = computeSizeMult();
 
       if (panel1) state.p1Top = absTop(panel1);
       if (panel3) state.p3Top = absTop(panel3);
 
       state.layers = cloudEls.map((el) => {
         const bg = el.dataset.bg || "";
+        if (bg) el.style.backgroundImage = `url("${bg}")`;
 
-        // NOTE: HTML uses data-start-x / data-start-y, but dataset gives camelCase too.
-        // dataset.startX works because data-start-x maps to startX.
-        const startX = num(el, "startX", 50);
-        const startY = num(el, "startY", 30);
+        const startX = numFromDataset(el, "startX", 50);
+        const startY = numFromDataset(el, "startY", 30);
+        const endX = numFromDataset(el, "endX", startX + (numFromDataset(el, "dir", 1) > 0 ? 25 : -25));
+        const endY = numFromDataset(el, "endY", startY - 8);
 
-        // base size fraction (your HTML values)
-        const baseSize = num(el, "size", 0.16);
-
-        // motion
-        const sideSpeed = num(el, "sideSpeed", 1.0);
-        const dir = num(el, "dir", 1);
+        const baseSize = numFromDataset(el, "size", 0.16);
+        const sideSpeed = numFromDataset(el, "sideSpeed", 1.0);
+        const dir = numFromDataset(el, "dir", 1);
         const z = parseInt(el.dataset.z || "1", 10) || 1;
 
-        // Fade defaults; you can add these attributes later if you want per-cloud timing
-        const fadeStart = num(el, "fadeStart", 0.08);
-        const fadeEnd = num(el, "fadeEnd", 0.82);
+        // Auto vary fade slightly per element using z + speed
+        const fadeStart = 0.05 + clamp((z * 0.02), 0, 0.12);
+        const fadeEnd = 0.78 + clamp((sideSpeed * 0.05), 0, 0.18);
 
-        if (bg) el.style.backgroundImage = `url("${bg}")`;
-        el.style.zIndex = String(z);
-
-        // Size by breakpoint
-        // Use viewport width so it stays responsive and consistent
-        const w = clamp(state.vw * baseSize * state.sizeMult, 80, 560);
+        // Size by breakpoint (clamped)
+        const w = clamp(state.vw * baseSize * state.sizeMult, 76, 580);
         const h = w * 0.60;
-
         el.style.width = `${Math.round(w)}px`;
         el.style.height = `${Math.round(h)}px`;
 
+        // Ensure clouds stay below std-sky always
+        el.style.zIndex = String(Math.min(z, 5));
+
+        // Give each cloud a slightly different "float frequency" feel
+        // (we won't do a true time-based loop to keep it stable; we derive from scroll + z)
+        const floatAmp = clamp(6 + z * 2, 6, 16);
+
         return {
           el,
-          startX,
-          startY,
+          startX, startY,
+          endX, endY,
           baseSize,
           sideSpeed,
           dir,
           z,
           fadeStart,
           fadeEnd,
+          floatAmp,
         };
       });
 
       if (skyBg) skyBg.style.transform = "scale(1)";
     }
 
-    // Tune these
-    const SKY_SCALE_MAX = 1.30; // how much sky grows by panel 3
-    const FLOAT_Y_MAX_VH = 0.10; // how much clouds float upward while clearing
+    // Tuning
+    const SKY_SCALE_MAX = 1.30;
+    const CLOUD_DRIFT_MAX = 0.18; // extra sideways drift as fraction of vw (on top of start->end)
+    const STD_EXIT_Y_VH = 0.95;   // how far up std-sky moves off screen
+    const STD_SCALE_MIN = 0.62;   // how small it gets by progress=1
 
     function render() {
       const scrollY = window.scrollY || window.pageYOffset;
-      const progress = getProgress(scrollY);
+      const p = getProgress(scrollY);
 
       // Sky scaling
       if (skyBg && !disableHeavy) {
-        const s = 1 + progress * (SKY_SCALE_MAX - 1);
+        const s = 1 + p * (SKY_SCALE_MAX - 1);
         skyBg.style.transform = `scale(${s})`;
       } else if (skyBg) {
         skyBg.style.transform = "scale(1)";
       }
 
+      // std-sky scroll behavior (wrapper only; inner keeps breathing animation)
+      if (stdWrap) {
+        if (disableHeavy) {
+          stdWrap.style.opacity = "1";
+          stdWrap.style.transform = "translate3d(-50%, -50%, 0)";
+        } else {
+          // move up and scale down while scrolling to panel 3
+          const yUp = -p * (state.vh * STD_EXIT_Y_VH);
+          const sDown = 1 - p * (1 - STD_SCALE_MIN);
+          const fade = 1 - smoothstep(0.55, 0.95, p);
+
+          stdWrap.style.opacity = String(fade);
+          stdWrap.style.transform = `translate3d(-50%, -50%, 0) translate3d(0, ${yUp.toFixed(1)}px, 0) scale(${sDown.toFixed(3)})`;
+        }
+      }
+
       // Clouds
-      state.layers.forEach((ln) => {
+      state.layers.forEach((ln, idx) => {
         const el = ln.el;
 
         if (disableHeavy) {
@@ -168,32 +170,32 @@
           ? parent.getBoundingClientRect()
           : { width: state.vw, height: state.vh, left: 0, top: 0 };
 
-        // Base position within the section
-        const baseX = (ln.startX / 100) * rect.width;
-        const baseY = (ln.startY / 100) * rect.height;
+        // interpolate start -> end inside the section
+        const xPct = ln.startX + (ln.endX - ln.startX) * p;
+        const yPct = ln.startY + (ln.endY - ln.startY) * p;
 
-        // Depth affects motion slightly (bigger z = feels closer = moves more)
-        const depthBoost = clamp(0.75 + ln.z * 0.05, 0.85, 1.45);
+        const baseX = (xPct / 100) * rect.width;
+        const baseY = (yPct / 100) * rect.height;
 
-        // Side drift to clear away
-        const driftMax = state.vw * 0.55 * state.driftMult;
-        const driftX = ln.dir * ln.sideSpeed * depthBoost * progress * driftMax;
+        // additional drift (varies per cloud)
+        const depthBoost = clamp(0.88 + ln.z * 0.035, 0.9, 1.25);
+        const extraDrift = ln.dir * ln.sideSpeed * depthBoost * p * (state.vw * CLOUD_DRIFT_MAX);
 
-        // Upward float while clearing
-        const floatY = progress * (state.vh * FLOAT_Y_MAX_VH);
+        // a bit of vertical float (varies per cloud)
+        const floatY = -p * (ln.floatAmp + (idx % 3) * 2);
 
-        // Fade out
-        const fadeT = smoothstep(ln.fadeStart, ln.fadeEnd, progress);
+        // fade out smoothly over span
+        const fadeT = smoothstep(ln.fadeStart, ln.fadeEnd, p);
         const opacity = 1 - fadeT;
-
         el.style.opacity = String(opacity);
 
-        // Attach layer to the section's absolute page position, then translate inside it
+        // anchor element at the section's absolute page position
         el.style.left = `${Math.round(rect.left + window.scrollX)}px`;
         el.style.top = `${Math.round(rect.top + window.scrollY)}px`;
 
+        // apply transforms (centered on base point)
         el.style.transform =
-          `translate3d(${baseX}px, ${baseY}px, 0) translate3d(-50%, -50%, 0) translate3d(${driftX}px, ${-floatY}px, 0)`;
+          `translate3d(${baseX.toFixed(1)}px, ${baseY.toFixed(1)}px, 0) translate3d(-50%, -50%, 0) translate3d(${extraDrift.toFixed(1)}px, ${floatY.toFixed(1)}px, 0)`;
       });
     }
 
@@ -208,26 +210,14 @@
       });
     }
 
-    // Init
-    setupLayers();
+    setup();
     render();
 
-    // Events
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener(
-      "resize",
-      function () {
-        setupLayers();
-        render();
-      },
-      { passive: true }
-    );
+    window.addEventListener("resize", () => { setup(); render(); }, { passive: true });
 
     window.ParallaxPanels = {
-      refresh: function () {
-        setupLayers();
-        render();
-      },
+      refresh: function () { setup(); render(); },
     };
   }
 })();
