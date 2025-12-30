@@ -2,17 +2,15 @@
   --max-width: 980px;
   --space: 1.25rem;
 
-  /* panel height variable */
-  --panel-height: 100vh;   /* desktop default */
-  --sky-span-multiplier: 3.05; /* how many panels the sky-bg conceptually covers */
+  --panel-height: 100vh;
 }
 
 /* responsive overrides */
 @media (max-width: 900px) {
-  :root { --panel-height: 80vh; --sky-span-multiplier: 3.02; }
+  :root { --panel-height: 80vh; }
 }
 @media (max-width: 480px) {
-  :root { --panel-height: 60vh; --sky-span-multiplier: 3.0; }
+  :root { --panel-height: 60vh; }
 }
 
 /* Base */
@@ -28,11 +26,7 @@ body {
   overflow-x: hidden;
 }
 
-/* SKY BACKGROUND (replacement)
-   Fixed to viewport so it "sits on top" and scales up as you scroll.
-   It visually covers the whole screen, but you control how long it scales in JS.
-*/
-/* SKY BACKGROUND: fixed + seamless */
+/* SKY BACKGROUND: seamless + fixed */
 .sky-bg {
   position: fixed;
   inset: 0;
@@ -41,8 +35,8 @@ body {
 
   background-image: url("assets/parallax/sky1.png");
   background-repeat: no-repeat;
-  background-position: center top;
   background-size: cover;
+  background-position: center top;
 
   transform-origin: center top;
   will-change: transform;
@@ -50,15 +44,7 @@ body {
   pointer-events: none;
 }
 
-
-/* Clouds: make sure opacity + transform are smooth */
-.cloud-layer {
-  opacity: 0.98;
-  mix-blend-mode: normal;
-  will-change: transform, opacity;
-}
-
-/* Parallax sections sizing uses variable and caps max height */
+/* Parallax sections */
 .parallax-section{
   position: relative;
   width: 100%;
@@ -73,7 +59,7 @@ body {
   z-index: 1;
 }
 
-/* All panels transparent (remove any background colors/gradients) */
+/* Remove ALL panel background colors */
 .panel-1,
 .panel-2,
 .panel-3,
@@ -83,7 +69,7 @@ body {
   background: transparent !important;
 }
 
-/* Parallax layers (clouds & decorative) — JS sets exact position & size */
+/* Parallax layers */
 .parallax-layer{
   position: absolute;
   top: 0;
@@ -92,13 +78,43 @@ body {
   background-repeat: no-repeat;
   background-position: center center;
   background-size: contain;
-  will-change: transform;
+  will-change: transform, opacity;
   backface-visibility: hidden;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
 }
+
 .cloud-layer { opacity: 0.98; mix-blend-mode: normal; }
 .parallax-layer--overlay { mix-blend-mode: overlay; opacity: 0.28; z-index: 3; }
+
+/* std-sky element (centered in panel 1) */
+.std-sky-wrap{
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate3d(-50%, -50%, 0);
+  z-index: 6;            /* Above clouds */
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.std-sky{
+  width: clamp(220px, 42vw, 520px);
+  height: clamp(220px, 42vw, 520px);
+  background-image: url("assets/parallax/std-sky1.png");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
+  will-change: transform;
+  animation: stdBreath 6.5s ease-in-out infinite;
+}
+
+/* breathing / floating loop */
+@keyframes stdBreath{
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(0, -10px, 0) scale(1.03); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
 
 /* content styling */
 .container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
@@ -112,14 +128,16 @@ body {
 /* responsive tweaks */
 @media (max-width: 900px) {
   .parallax-section { min-height: 32vh; max-height: calc(var(--panel-height) * 1.15); }
-  .sky-bg { height: calc(var(--panel-height) * var(--sky-span-multiplier)); } /* re-evaluated by CSS var */
 }
 @media (max-width: 480px) {
   .parallax-section { min-height: 28vh; max-height: calc(var(--panel-height) * 1.1); }
-  .sky-bg { height: calc(var(--panel-height) * var(--sky-span-multiplier)); }
 }
 
 /* reduced motion fallback */
 @media (prefers-reduced-motion: reduce) {
-  .parallax-layer, .sky-bg { transition: none !important; transform: none !important; }
+  .parallax-layer, .sky-bg, .std-sky-wrap, .std-sky {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }
