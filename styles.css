@@ -29,25 +29,25 @@ body{
   pointer-events: none;
 }
 
-/* Lake scene (JS controls visibility + translate/scale) */
+/* Lake scene (fixed; JS slides in from bottom briefly then keeps centered) */
 .lake-scene{
   position: fixed;
   left: 50%;
   top: 50%;
-  width: 120vw; /* extend sideways more */
-  height: clamp(320px, 78vh, 980px); /* taller so it “reaches” through panel 3 */
+  width: 120vw;
+  height: clamp(360px, 86vh, 1100px);
   transform: translate3d(-50%, -50%, 0);
   transform-origin: center center;
   will-change: transform;
   z-index: 2;
   pointer-events: none;
-  visibility: hidden; /* toggled by JS */
+  visibility: hidden;
 }
 
 @media (max-width: 480px){
   .lake-scene{
     width: 132vw;
-    height: clamp(360px, 86vh, 1100px);
+    height: clamp(420px, 92vh, 1200px);
   }
 }
 
@@ -107,7 +107,6 @@ body{
   transform: translate3d(0,0,0);
 }
 
-/* Smooth mirrored loop */
 @keyframes stdFloatSmooth{
   0%   { transform: translate3d(-14px, -6px, 0) rotate(-0.7deg); }
   12.5%{ transform: translate3d(-7px, -14px, 0) rotate(-0.35deg); }
@@ -120,7 +119,7 @@ body{
   100% { transform: translate3d(-14px, -6px, 0) rotate(-0.7deg); }
 }
 
-/* Clouds (NO flips, only translate) */
+/* Clouds */
 .parallax-layer{
   position:absolute;
   left: 50%;
