@@ -16,7 +16,7 @@ body{
   overflow-x:hidden;
 }
 
-/* SKY (fixed) */
+/* SKY: fixed behind everything */
 .sky-bg{
   position: fixed;
   inset: 0;
@@ -82,36 +82,42 @@ body{
 }
 .cloud-layer{ opacity: .98; }
 
-/* Panel 2 sticky scene (lake replaces sky visually) */
-.scene2-sticky{
-  position: sticky;
-  top: 50vh;                 /* sits at middle of viewport */
-  transform: translate3d(0, -50%, 0);
-  width: 100vw;              /* cover side-to-side */
-  height: clamp(260px, 60vh, 720px);
+/* Panel 2: absolute layer so RSVP stays centered */
+.scene2-layer{
+  position: absolute;
+  inset: 0;
   z-index: 2;
   pointer-events: none;
 }
 
-/* push scene up a bit on mobile so its top edge doesn’t show at load */
+/* sticky scene centered vertically */
+.scene2-sticky{
+  position: sticky;
+  top: 50vh;
+  transform: translate3d(0, -50%, 0);
+  width: 100vw;
+  height: clamp(260px, 60vh, 720px);
+}
+
+/* Mobile: push the scene up so the starting edge is not visible */
 @media (max-width: 480px){
   .scene2-sticky{
-    top: 54vh;
+    top: 55vh;
     height: clamp(300px, 66vh, 760px);
   }
 }
 
-/* Lake covers width */
+/* Lake covers full width */
 .lake{
   position:absolute;
   inset: 0;
   background: url("assets/parallax/lake1.png") no-repeat center / cover;
   transform-origin: center center;
   will-change: transform, opacity;
-  opacity: 0;                /* fades in as sky fades out */
+  opacity: 0;
 }
 
-/* Crater aligned TOP with lake */
+/* Crater top-aligned to lake */
 .crater{
   position:absolute;
   left: 50%;
@@ -121,8 +127,8 @@ body{
   background: url("assets/parallax/crater.png") no-repeat top center / contain;
   transform: translate3d(-50%, 0, 0) scale(1);
   transform-origin: top center;
-  will-change: transform;
-  opacity: 0;                /* fades in with lake */
+  will-change: transform, opacity;
+  opacity: 0;
 }
 
 /* Content */
@@ -137,6 +143,7 @@ body{
   align-items:center;
   gap: 1rem;
 }
+
 .image-button{
   cursor:pointer;
   border:0;
