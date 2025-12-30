@@ -12,14 +12,11 @@ html, body { height:100%; width:100%; overflow-x:hidden; }
 body{
   margin:0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-  color:#04293a;
   background:#071428;
   overflow-x:hidden;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
 }
 
-/* SKY bg */
+/* SKY (fixed) */
 .sky-bg{
   position: fixed;
   inset: 0;
@@ -32,61 +29,28 @@ body{
   pointer-events: none;
 }
 
-/* LAKE bg that takes over halfway through panel 2.
-   It is centered vertically at 50% of panel 2 by JS (top set in JS).
-*/
-.lake-bg{
-  position: fixed;
-  left: 0;
-  width: 100vw;
-  height: 70vh;              /* enough to cover wide screens */
-  top: 50vh;                 /* JS will move to exact half of panel 2 */
-  transform: translate3d(0,-50%,0) scale(1);
-  transform-origin: center center;
-  background: url("assets/parallax/lake1.png") no-repeat center / cover;
-  will-change: transform, opacity, top;
-  z-index: 0;                /* same plane as sky, controlled by opacity */
-  pointer-events: none;
-  opacity: 0;                /* starts hidden */
-}
-
-/* crater aligned to top of lake-bg */
-.crater-bg{
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background: url("assets/parallax/crater.png") no-repeat top center / contain;
-  transform-origin: top center;
-  transform: scale(1);
-  will-change: transform;
-  pointer-events: none;
-}
-
-/* Panels */
+/* PANELS */
 .parallax-section{
   position: relative;
   width: 100%;
   height: var(--panel-height);
   min-height: 35vh;
-  max-height: calc(var(--panel-height) * 1.25);
+  overflow: hidden;
   display:flex;
   align-items:center;
   justify-content:center;
-  isolation:isolate;
+  isolation: isolate;
   z-index: 1;
   background: transparent !important;
-  overflow: hidden;
 }
 
-/* Save the date */
+/* Save-the-date */
 .std-sky-wrap{
   position:absolute;
   left:50%;
   top:50%;
   transform: translate3d(-50%, -50%, 0);
-  z-index: 9;
+  z-index: 10;
   pointer-events:none;
   will-change: transform, opacity;
 }
@@ -95,7 +59,7 @@ body{
   height: clamp(240px, 52vw, 620px);
   background: url("assets/parallax/std-sky.png") no-repeat center / contain;
   will-change: transform;
-  animation: stdFloat 2.2s ease-in-out infinite;
+  animation: stdFloat 2.0s ease-in-out infinite;
 }
 @keyframes stdFloat{
   0%   { transform: translate3d(-8px, 0, 0) rotate(-0.8deg); }
@@ -103,47 +67,113 @@ body{
   100% { transform: translate3d(-8px, 0, 0) rotate(-0.8deg); }
 }
 
-/* Clouds: positioned using left/top in %, animated via transform only */
-.cloud-layer{
+/* Clouds */
+.parallax-layer{
   position:absolute;
   left: 50%;
   top: 50%;
-  width: 220px;
-  height: 140px;
+  transform: translate3d(-50%, -50%, 0);
   background-repeat:no-repeat;
   background-position:center;
   background-size:contain;
-  opacity: .98;
-  pointer-events:none;
   will-change: transform, opacity;
-  transform: translate3d(-50%, -50%, 0);
+  pointer-events:none;
+  z-index: 2;
+}
+.cloud-layer{ opacity: .98; }
+
+/* Panel 2 sticky scene (lake replaces sky visually) */
+.scene2-sticky{
+  position: sticky;
+  top: 50vh;                 /* sits at middle of viewport */
+  transform: translate3d(0, -50%, 0);
+  width: 100vw;              /* cover side-to-side */
+  height: clamp(260px, 60vh, 720px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* push scene up a bit on mobile so its top edge doesn’t show at load */
+@media (max-width: 480px){
+  .scene2-sticky{
+    top: 54vh;
+    height: clamp(300px, 66vh, 760px);
+  }
+}
+
+/* Lake covers width */
+.lake{
+  position:absolute;
+  inset: 0;
+  background: url("assets/parallax/lake1.png") no-repeat center / cover;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  opacity: 0;                /* fades in as sky fades out */
+}
+
+/* Crater aligned TOP with lake */
+.crater{
+  position:absolute;
+  left: 50%;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: url("assets/parallax/crater.png") no-repeat top center / contain;
+  transform: translate3d(-50%, 0, 0) scale(1);
+  transform-origin: top center;
+  will-change: transform;
+  opacity: 0;                /* fades in with lake */
 }
 
 /* Content */
 .container{ max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
 .section-content{
-  position:relative;
-  z-index:10;
+  position: relative;
+  z-index: 5;
   text-align:center;
   padding: 2rem;
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:1rem;
+  gap: 1rem;
 }
 .image-button{
-  display:inline-block;
   cursor:pointer;
   border:0;
   background:transparent;
-  width:auto;
   height: clamp(3.5rem, 8vh, 5rem);
+  width:auto;
   object-fit:contain;
+}
+
+/* Map poster pinned in panel 3 */
+.map-poster{
+  position:absolute;
+  right: 14px;
+  bottom: 22px;
+  width: min(520px, calc(100vw - 28px));
+  z-index: 6;
+  pointer-events: none;
+}
+.map-poster__img{
+  width: 100%;
+  height: auto;
+  display:block;
+  border-radius: 18px;
+  box-shadow: 0 20px 55px rgba(0,0,0,0.38);
+  opacity: 0;
+  transform: translate3d(-18px, 12px, 0) rotate(-6deg) scale(0.92);
+  transform-origin: left center;
+  transition: opacity 260ms ease, transform 420ms cubic-bezier(0.2,0.9,0.2,1);
+}
+.map-poster.is-shown .map-poster__img{
+  opacity: 1;
+  transform: translate3d(0,0,0) rotate(0deg) scale(1);
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce){
-  .sky-bg, .lake-bg, .crater-bg, .std-sky-wrap, .std-sky, .cloud-layer{
+  .sky-bg, .std-sky, .std-sky-wrap, .parallax-layer, .lake, .crater, .map-poster__img{
     animation:none !important;
     transition:none !important;
     transform:none !important;
