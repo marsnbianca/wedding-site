@@ -9,46 +9,96 @@
 </head>
 
 <body>
-  <!-- Single-instance sky background (appears once). -->
+  <!-- Seamless sky background (fixed). -->
   <div id="sky-bg" class="sky-bg" aria-hidden="true"></div>
 
-  <!-- PART 1: CLOUDS (decorative) -->
-<section class="parallax-section panel-1" id="panel-1" aria-label="Part 1 - Clouds">
-  <div class="parallax-layer cloud-layer"
-       data-bg="assets/parallax/cloud1.png"
-       data-start-x="72" data-start-y="60" data-size="0.22"
-       data-side-speed="1.5" data-dir="-1" data-z="10" aria-hidden="true"></div>
+  <!-- PART 1: CLOUDS + STD SKY (decorative) -->
+  <section class="parallax-section panel-1" id="panel-1" aria-label="Part 1 - Clouds">
 
-  <div class="parallax-layer cloud-layer"
-       data-bg="assets/parallax/cloud2.png"
-       data-start-x="10" data-start-y="15" data-size="0.16"
-       data-side-speed="0.6" data-dir="1" data-z="3" aria-hidden="true"></div>
+    <!-- Center "std-sky1.png" (always above clouds) -->
+    <div id="std-sky-wrap" class="std-sky-wrap" aria-hidden="true">
+      <div id="std-sky" class="std-sky"></div>
+    </div>
 
-  <div class="parallax-layer cloud-layer"
-       data-bg="assets/parallax/cloud3.png"
-       data-start-x="28" data-start-y="35" data-size="0.20"
-       data-side-speed="0.9" data-dir="-1" data-z="5" aria-hidden="true"></div>
-</section>
+    <!-- Clouds (Panel 1) -->
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud1.png"
+         data-start-x="78" data-start-y="18" data-end-x="110" data-end-y="8"
+         data-size="0.22" data-side-speed="1.15" data-dir="1" data-z="2" aria-hidden="true"></div>
 
-  <!-- PART 2: SKY TRANSITION -->
-  <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - Sky">
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud2.png"
+         data-start-x="14" data-start-y="16" data-end-x="-15" data-end-y="6"
+         data-size="0.16" data-side-speed="0.85" data-dir="-1" data-z="1" aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud3.png"
+         data-start-x="18" data-start-y="62" data-end-x="-10" data-end-y="72"
+         data-size="0.20" data-side-speed="1.05" data-dir="-1" data-z="3" aria-hidden="true"></div>
+
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud4.png"
-         data-start-x="12" data-start-y="60" data-size="0.14"
-         data-side-speed="0.40" data-dir="1" data-z="2" aria-hidden="true"></div>
+         data-start-x="86" data-start-y="68" data-end-x="118" data-end-y="78"
+         data-size="0.14" data-side-speed="0.70" data-dir="1" data-z="1" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
          data-bg="assets/parallax/cloud5.png"
-         data-start-x="72" data-start-y="34" data-size="0.12"
-         data-side-speed="0.95" data-dir="-1" data-z="6" aria-hidden="true"></div>
+         data-start-x="8" data-start-y="40" data-end-x="-20" data-end-y="34"
+         data-size="0.12" data-side-speed="0.60" data-dir="-1" data-z="2" aria-hidden="true"></div>
+
+    <!-- Duplicates (same images, different positions/speeds) -->
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud1.png"
+         data-start-x="92" data-start-y="42" data-end-x="125" data-end-y="34"
+         data-size="0.12" data-side-speed="0.55" data-dir="1" data-z="2" aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud3.png"
+         data-start-x="6" data-start-y="78" data-end-x="-22" data-end-y="86"
+         data-size="0.14" data-side-speed="0.75" data-dir="-1" data-z="1" aria-hidden="true"></div>
+
+  </section>
+
+  <!-- PART 2: CLOUDS CONTINUE -->
+  <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - Sky">
+
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud4.png"
+         data-start-x="16" data-start-y="18" data-end-x="-18" data-end-y="10"
+         data-size="0.14" data-side-speed="0.65" data-dir="-1" data-z="1" aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud5.png"
+         data-start-x="84" data-start-y="22" data-end-x="120" data-end-y="12"
+         data-size="0.12" data-side-speed="0.95" data-dir="1" data-z="2" aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud2.png"
+         data-start-x="12" data-start-y="70" data-end-x="-16" data-end-y="78"
+         data-size="0.18" data-side-speed="1.10" data-dir="-1" data-z="3" aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud1.png"
+         data-start-x="78" data-start-y="72" data-end-x="118" data-end-y="82"
+         data-size="0.16" data-side-speed="0.80" data-dir="1" data-z="1" aria-hidden="true"></div>
+
+    <!-- More duplicates for density -->
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud3.png"
+         data-start-x="92" data-start-y="46" data-end-x="125" data-end-y="40"
+         data-size="0.12" data-side-speed="0.60" data-dir="1" data-z="2" aria-hidden="true"></div>
+
+    <div class="parallax-layer cloud-layer"
+         data-bg="assets/parallax/cloud5.png"
+         data-start-x="6" data-start-y="44" data-end-x="-22" data-end-y="38"
+         data-size="0.11" data-side-speed="0.55" data-dir="-1" data-z="1" aria-hidden="true"></div>
+
   </section>
 
   <!-- PART 3: SKY CONTINUE (sky scales up until this panel's start) -->
-  <section class="parallax-section panel-3" id="panel-3" aria-label="Part 3 - Sky continue">
-    <!-- intentionally no panel background color here (see styles.css) -->
-  </section>
+  <section class="parallax-section panel-3" id="panel-3" aria-label="Part 3 - Sky continue"></section>
 
-  <!-- PART 4: MAIN CONTENT (Mars & Bianca + RSVP) -->
+  <!-- PART 4: MAIN CONTENT -->
   <section class="parallax-section panel-4" id="panel-4" aria-label="Part 4 - Welcome">
     <div class="parallax-layer parallax-layer--overlay" data-speed="0.18" data-bg="" aria-hidden="true"></div>
 
