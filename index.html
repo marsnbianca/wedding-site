@@ -11,7 +11,7 @@
   <!-- Sky background -->
   <div id="sky-bg" class="sky-bg" aria-hidden="true"></div>
 
-  <!-- Lake + crater scene (pinned center; active panel2 -> end panel3) -->
+  <!-- Lake + crater scene (JS positions it) -->
   <div id="lake-scene" class="lake-scene" aria-hidden="true">
     <div id="lake" class="lake"></div>
     <div id="crater" class="crater"></div>
@@ -23,40 +23,40 @@
       <div id="std-sky" class="std-sky"></div>
     </div>
 
-    <!-- Clouds (panel 1) -->
+    <!-- Panel 1 clouds -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud1.png"
-      data-start-x="22" data-start-y="16"
-      data-end-x="-18" data-end-y="8"
+      data-start-x="26" data-start-y="16"
+      data-end-x="-10" data-end-y="8"
       data-size="0.22" data-speed="1.05" data-dir="-1" data-z="2"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud2.png"
-      data-start-x="78" data-start-y="16"
+      data-start-x="74" data-start-y="16"
       data-end-x="138" data-end-y="8"
       data-size="0.26" data-speed="1.25" data-dir="1" data-z="2"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud3.png"
-      data-start-x="24" data-start-y="44"
-      data-end-x="-18" data-end-y="62"
+      data-start-x="28" data-start-y="44"
+      data-end-x="-12" data-end-y="62"
       data-size="0.20" data-speed="0.95" data-dir="-1" data-z="1"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud4.png"
-      data-start-x="76" data-start-y="46"
+      data-start-x="72" data-start-y="46"
       data-end-x="142" data-end-y="66"
       data-size="0.19" data-speed="1.10" data-dir="1" data-z="1"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud5.png"
-      data-start-x="26" data-start-y="78"
-      data-end-x="-16" data-end-y="94"
+      data-start-x="30" data-start-y="78"
+      data-end-x="-12" data-end-y="94"
       data-size="0.22" data-speed="1.20" data-dir="-1" data-z="1"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud2.png"
-      data-start-x="74" data-start-y="80"
+      data-start-x="70" data-start-y="80"
       data-end-x="150" data-end-y="96"
       data-size="0.21" data-speed="1.30" data-dir="1" data-z="1"></div>
   </section>
@@ -64,18 +64,30 @@
   <!-- PANEL 2 -->
   <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - RSVP">
 
-    <!-- Moved from panel 1: previous #8 and #9 clouds go here -->
+    <!-- Panel 2 clouds (scattered; also clear sideways) -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud4.png"
-      data-start-x="42" data-start-y="22"
-      data-end-x="-10" data-end-y="12"
-      data-size="0.18" data-speed="1.55" data-dir="-1" data-z="1"></div>
+      data-start-x="18" data-start-y="18"
+      data-end-x="-18" data-end-y="10"
+      data-size="0.18" data-speed="1.30" data-dir="-1" data-z="1"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud1.png"
-      data-start-x="58" data-start-y="26"
-      data-end-x="118" data-end-y="12"
-      data-size="0.18" data-speed="1.45" data-dir="1" data-z="1"></div>
+      data-start-x="82" data-start-y="20"
+      data-end-x="138" data-end-y="10"
+      data-size="0.18" data-speed="1.25" data-dir="1" data-z="1"></div>
+
+    <div class="parallax-layer cloud-layer"
+      data-bg="assets/parallax/cloud2.png"
+      data-start-x="26" data-start-y="56"
+      data-end-x="-20" data-end-y="62"
+      data-size="0.20" data-speed="1.10" data-dir="-1" data-z="1"></div>
+
+    <div class="parallax-layer cloud-layer"
+      data-bg="assets/parallax/cloud3.png"
+      data-start-x="76" data-start-y="58"
+      data-end-x="140" data-end-y="66"
+      data-size="0.20" data-speed="1.15" data-dir="1" data-z="1"></div>
 
     <div class="section-content container">
       <img id="rsvp-trigger" class="image-button rsvp-btn"
