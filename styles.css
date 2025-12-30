@@ -11,7 +11,6 @@
   :root { --panel-height: 60vh; }
 }
 
-/* Base */
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
@@ -24,7 +23,7 @@ body{
   overflow-x: hidden;
 }
 
-/* SKY BACKGROUND: seamless + fixed */
+/* Sky background (fixed, seamless) */
 .sky-bg{
   position: fixed;
   inset: 0;
@@ -40,7 +39,7 @@ body{
   pointer-events: none;
 }
 
-/* Sections */
+/* Panels */
 .parallax-section{
   position: relative;
   width: 100%;
@@ -58,7 +57,7 @@ body{
 /* All panels transparent */
 .panel-1,.panel-2,.panel-3,.panel-4,.panel-5,.panel-6{ background: transparent !important; }
 
-/* Layers */
+/* Parallax layers */
 .parallax-layer{
   position: absolute;
   top: 0;
@@ -71,56 +70,55 @@ body{
   backface-visibility: hidden;
   pointer-events: none;
 }
+
 .cloud-layer{
   opacity: 0.98;
   mix-blend-mode: normal;
   z-index: 2;
 }
-.parallax-layer--overlay{
-  mix-blend-mode: overlay;
-  opacity: 0.28;
-  z-index: 3;
-}
 
-/* STD SKY (panel 1) */
+/* Save-the-date element (panel 1) */
 .std-sky-wrap{
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate3d(-50%, -50%, 0);
-  z-index: 9; /* above clouds */
+  z-index: 9;
   pointer-events: none;
   will-change: transform, opacity;
 }
+
 .std-sky{
-  width: clamp(240px, 52vw, 600px);
-  height: clamp(240px, 52vw, 600px);
+  width: clamp(240px, 52vw, 620px);
+  height: clamp(240px, 52vw, 620px);
   background-image: url("assets/parallax/std-sky.png");
   background-repeat: no-repeat;
   background-position: center center;
   background-size: contain;
   will-change: transform;
-  /* more visible animation: faster + stronger */
-  animation: stdBreath 3.8s ease-in-out infinite;
-}
-@keyframes stdBreath{
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(0, -18px, 0) scale(1.06); }
-  100% { transform: translate3d(0, 0, 0) scale(1); }
+  /* Floating, not breathing */
+  animation: stdFloat 2.6s ease-in-out infinite;
 }
 
-/* Panel 3 scene (lake + crater aligned at top) */
-.scene-wrap{
+@keyframes stdFloat{
+  0%   { transform: translate3d(0, 0, 0) rotate(-0.6deg); }
+  50%  { transform: translate3d(0, -16px, 0) rotate(0.6deg); }
+  100% { transform: translate3d(0, 0, 0) rotate(-0.6deg); }
+}
+
+/* Panel 2 scene: lake overlaps sky */
+.scene2-wrap{
   position: absolute;
   top: 0;
   left: 50%;
   transform: translate3d(-50%, 0, 0);
-  width: min(920px, 96vw);
-  height: clamp(220px, 42vh, 520px);
-  z-index: 4;
+  width: min(980px, 100vw);
+  height: clamp(240px, 50vh, 640px);
+  z-index: 4; /* above sky, below content */
   pointer-events: none;
   will-change: transform;
 }
+
 .lake{
   position: absolute;
   top: 0;
@@ -131,20 +129,22 @@ body{
   background-repeat: no-repeat;
   background-position: top center;
   background-size: contain;
+  transform-origin: top center;
   will-change: transform;
 }
+
 .crater{
   position: absolute;
-  top: 0;                 /* top aligned with lake */
+  top: 0;
   left: 50%;
-  transform: translate3d(-50%, 0, 0) scale(1);
-  transform-origin: top center;
   width: 100%;
   height: 100%;
   background-image: url("assets/parallax/crater.png");
   background-repeat: no-repeat;
   background-position: top center;
   background-size: contain;
+  transform: translate3d(-50%, 0, 0) scale(1);
+  transform-origin: top center;
   will-change: transform;
   z-index: 2;
 }
@@ -162,8 +162,6 @@ body{
   align-items:center;
   gap:1rem;
 }
-.section-content h1{ margin:0; font-size: clamp(1.6rem, 4.5vw, 3.25rem); }
-.section-content .lead{ margin:0; color:#064a6f; }
 
 .image-button{
   display:inline-block;
@@ -176,9 +174,49 @@ body{
   object-fit:contain;
 }
 
+/* Map poster overlay (panel 3) */
+.map-poster{
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-poster__inner{
+  width: min(920px, 92vw);
+  max-height: 78vh;
+  transform-origin: center;
+  opacity: 0;
+  transform: translate3d(120vw, 0, 0) rotate(8deg) scale(0.96);
+  will-change: transform, opacity;
+}
+
+.map-poster__img{
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  box-shadow: 0 18px 48px rgba(0,0,0,0.35);
+}
+
+/* Active state */
+.map-poster.is-open .map-poster__inner{
+  opacity: 1;
+  animation: mapFlyIn 650ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes mapFlyIn{
+  0%   { transform: translate3d(120vw, 0, 0) rotate(10deg) scale(0.96); }
+  70%  { transform: translate3d(-2vw, 0, 0) rotate(-1deg) scale(1.01); }
+  100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce){
-  .parallax-layer, .sky-bg, .std-sky-wrap, .std-sky, .scene-wrap, .crater {
+  .parallax-layer, .sky-bg, .std-sky-wrap, .std-sky, .scene2-wrap, .lake, .crater, .map-poster__inner{
     animation: none !important;
     transition: none !important;
     transform: none !important;
