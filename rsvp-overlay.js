@@ -2,10 +2,9 @@
 // Path: wedding-site/rsvp-overlay.js
 // Include from your wedding-site index.html: <script src="rsvp-overlay.js"></script>
 //
-// Parent no longer forces inline pixel heights from the child.
-// Instead: iframe uses height:auto and parent sets a relative max-height using dynamic viewport (--dvh)
-// with a px cap fallback: iframe.style.maxHeight = 'min(pxCap, calc(var(--dvh) * N))'.
-// This removes inline px height values. The child still posts RSVP:HEIGHT (used only for debugging / analytics here).
+// Parent uses a larger mobile max-height and accounts for card padding in the relative calc.
+// The iframe will not be forced to a px height inline; it uses a relative max-height expression
+// that prefers dynamic viewport (--dvh) while falling back to a generous px cap.
 
 (function () {
   var DEBUG = false;
@@ -35,7 +34,7 @@
       " height:auto; transition: max-height .18s ease, height .18s ease; }",
 
       /* Height recommendations (mobile-first) */
-      ".rsvp-modal-card .rsvp-modal-iframe{ min-height:20svh; max-height:85svh; }",
+      ".rsvp-modal-card .rsvp-modal-iframe{ min-height:30svh; max-height:95svh; }",
       "@media (min-width:641px) and (max-width:1007px){ .rsvp-modal-card .rsvp-modal-iframe{ min-height:300px; max-height:80svh; } }",
       "@media (min-width:1008px){ .rsvp-modal-card .rsvp-modal-iframe{ min-height:400px; max-height:70vh; } }",
 
@@ -84,6 +83,14 @@
     } catch (_) {}
   }
 
+  // entrance animation helper (safe, small effect)
+  function animateEntrance() {
+    if (!card) return;
+    card.classList.add('rsvp-enter');
+    requestAnimationFrame(function () { card.classList.add('rsvp-enter-to'); });
+    setTimeout(function () { if (card) card.classList.remove('rsvp-enter', 'rsvp-enter-to'); }, 360);
+  }
+
   // breakpoint-based recommended percent and px cap
   function breakpointConfig() {
     var vw = window.innerWidth || document.documentElement.clientWidth;
@@ -94,18 +101,19 @@
     if (vw >= 641) {
       return { pct: 80, pxCap: Math.round(vh * 0.9) }; // tablet
     }
-    return { pct: 85, pxCap: Math.round(vh * 0.95) }; // mobile
+    // mobile — increased to 95% and larger px fallback so modal feels taller
+    return { pct: 95, pxCap: Math.round(vh * 0.98) }; // mobile: 95svh recommended, px cap fallback
   }
 
-  // Apply relative max-height to iframe: min(pxCap, calc(var(--dvh) * pct))
+  // Apply relative max-height to iframe: min(pxCap, calc(var(--dvh) * pct - 2rem))
+  // Subtract ~2rem to account for card padding/margins so content isn't clipped by the card chrome.
   function applyRelativeMaxHeight() {
     if (!iframe) return;
     var cfg = breakpointConfig();
     var pct = cfg.pct || 70;
     var pxCap = cfg.pxCap || Math.round(window.innerHeight * (pct / 100));
-    // Use CSS min() expression — browsers that support calc/var will use the dynamic unit
-    iframe.style.maxHeight = 'min(' + pxCap + 'px, calc(var(--dvh) * ' + pct + '))';
-    // Ensure iframe can show its internal scroll if needed (we're using relative sizing now)
+    // Use CSS min() expression — substract a small amount to allow for padding
+    iframe.style.maxHeight = 'min(' + pxCap + 'px, calc(var(--dvh) * ' + pct + ' - 2rem))';
     iframe.style.overflowY = 'auto';
     iframe.style.height = 'auto'; // don't set inline px height
   }
@@ -166,7 +174,8 @@
         // Reapply relative max-height after a small delay (visualViewport may have changed)
         applyRelativeMaxHeight();
       }, 160);
-  });
+    });
+
     lockScroll(true);
     animateEntrance();
     console.info('rsvp-overlay: opened modal ->', iframe.src);
@@ -261,5 +270,5 @@
     info: function () { return { RSVP_URL: RSVP_URL, hostExists: !!document.getElementById("rsvpHostOverlay"), open: host.style.display === 'flex' }; }
   };
 
-  console.log('rsvp-overlay: initialized (relative max-height, no inline px height; child can still report height for info)');
+  console.log('rsvp-overlay: initialized (relative max-height, mobile pct increased; child can still report height for info)');
 })();
