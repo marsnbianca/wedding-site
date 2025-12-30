@@ -9,8 +9,13 @@
 </head>
 
 <body>
-  <!-- SKY: appears over panel 1 and extends visually until half of panel 2 (via JS fade) -->
+  <!-- sky background (scales until half of panel 2) -->
   <div id="sky-bg" class="sky-bg" aria-hidden="true"></div>
+
+  <!-- lake background (takes over at half of panel 2, sits centered vertically in panel 2) -->
+  <div id="lake-bg" class="lake-bg" aria-hidden="true">
+    <div id="crater-bg" class="crater-bg" aria-hidden="true"></div>
+  </div>
 
   <!-- PANEL 1 -->
   <section class="parallax-section panel-1" id="panel-1" aria-label="Part 1 - Save the date">
@@ -18,58 +23,60 @@
       <div id="std-sky" class="std-sky"></div>
     </div>
 
-    <!-- (2) cloud1 -->
-    <div class="parallax-layer cloud-layer"
+    <!-- Re-scattered clouds (panel 1) -->
+    <div class="cloud-layer"
       data-bg="assets/parallax/cloud1.png"
-      data-start-x="92" data-start-y="16" data-end-x="132" data-end-y="10"
-      data-size="0.22" data-side-speed="1.20" data-dir="1" data-z="2" aria-hidden="true"></div>
+      data-start-x="10" data-start-y="18"
+      data-end-x="-25" data-end-y="6"
+      data-size="0.18" data-speed="1.05" data-fade="0.92" data-z="2" aria-hidden="true"></div>
 
-    <!-- (3) cloud2 -> DOWN -->
-    <div class="parallax-layer cloud-layer"
+    <div class="cloud-layer"
       data-bg="assets/parallax/cloud2.png"
-      data-start-x="10" data-start-y="28" data-end-x="-22" data-end-y="22"
-      data-size="0.16" data-side-speed="0.95" data-dir="-1" data-z="1" aria-hidden="true"></div>
+      data-start-x="84" data-start-y="16"
+      data-end-x="120" data-end-y="10"
+      data-size="0.22" data-speed="1.25" data-fade="0.90" data-z="2" aria-hidden="true"></div>
 
-    <!-- (4) cloud4 -> DOWN so visible -->
-    <div class="parallax-layer cloud-layer"
-      data-bg="assets/parallax/cloud4.png"
-      data-start-x="52" data-start-y="22" data-end-x="96" data-end-y="18"
-      data-size="0.14" data-side-speed="2.00" data-dir="1" data-z="2" aria-hidden="true"></div>
-
-    <!-- (5) cloud3 -> DOWN -->
-    <div class="parallax-layer cloud-layer"
+    <div class="cloud-layer"
       data-bg="assets/parallax/cloud3.png"
-      data-start-x="74" data-start-y="44" data-end-x="108" data-end-y="36"
-      data-size="0.14" data-side-speed="0.95" data-dir="1" data-z="2" aria-hidden="true"></div>
+      data-start-x="18" data-start-y="44"
+      data-end-x="-22" data-end-y="56"
+      data-size="0.16" data-speed="0.95" data-fade="0.94" data-z="1" aria-hidden="true"></div>
 
-    <!-- (6) cloud5 -> UP -->
-    <div class="parallax-layer cloud-layer"
-      data-bg="assets/parallax/cloud5.png"
-      data-start-x="16" data-start-y="56" data-end-x="-22" data-end-y="70"
-      data-size="0.14" data-side-speed="0.95" data-dir="-1" data-z="1" aria-hidden="true"></div>
-
-    <!-- (7) deleted -->
-
-    <!-- (8) cloud2 -> center-ish / to the left -->
-    <div class="parallax-layer cloud-layer"
-      data-bg="assets/parallax/cloud2.png"
-      data-start-x="36" data-start-y="66" data-end-x="6" data-end-y="78"
-      data-size="0.13" data-side-speed="1.25" data-dir="-1" data-z="2" aria-hidden="true"></div>
-
-    <!-- (9) cloud4 -> to the right + bigger -->
-    <div class="parallax-layer cloud-layer"
+    <div class="cloud-layer"
       data-bg="assets/parallax/cloud4.png"
-      data-start-x="98" data-start-y="68" data-end-x="142" data-end-y="70"
-      data-size="0.17" data-side-speed="0.80" data-dir="1" data-z="1" aria-hidden="true"></div>
+      data-start-x="88" data-start-y="42"
+      data-end-x="132" data-end-y="56"
+      data-size="0.15" data-speed="1.10" data-fade="0.93" data-z="1" aria-hidden="true"></div>
+
+    <div class="cloud-layer"
+      data-bg="assets/parallax/cloud5.png"
+      data-start-x="8" data-start-y="78"
+      data-end-x="-28" data-end-y="92"
+      data-size="0.18" data-speed="1.15" data-fade="0.96" data-z="1" aria-hidden="true"></div>
+
+    <div class="cloud-layer"
+      data-bg="assets/parallax/cloud2.png"
+      data-start-x="94" data-start-y="76"
+      data-end-x="136" data-end-y="92"
+      data-size="0.16" data-speed="1.35" data-fade="0.96" data-z="1" aria-hidden="true"></div>
+
+    <!-- center-ish but will be pushed away by safe zone -->
+    <div class="cloud-layer"
+      data-bg="assets/parallax/cloud4.png"
+      data-start-x="34" data-start-y="28"
+      data-end-x="-6" data-end-y="20"
+      data-size="0.14" data-speed="1.55" data-fade="0.90" data-z="2" aria-hidden="true"></div>
+
+    <!-- center-ish but will be pushed away by safe zone -->
+    <div class="cloud-layer"
+      data-bg="assets/parallax/cloud1.png"
+      data-start-x="66" data-start-y="30"
+      data-end-x="108" data-end-y="22"
+      data-size="0.14" data-speed="1.45" data-fade="0.90" data-z="2" aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 2: lake + crater + RSVP -->
-  <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - RSVP and Scene">
-    <div class="scene2-wrap" aria-hidden="true">
-      <div id="lake" class="lake"></div>
-      <div id="crater" class="crater"></div>
-    </div>
-
+  <!-- PANEL 2 -->
+  <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - RSVP">
     <div class="section-content container">
       <img id="rsvp-trigger" class="image-button rsvp-btn"
         src="assets/buttons/RSVP1.PNG" alt="RSVP" title="openRSVP" aria-label="openRSVP"
@@ -77,15 +84,11 @@
     </div>
   </section>
 
-  <!-- PANEL 3: map button + pinned poster -->
+  <!-- PANEL 3 -->
   <section class="parallax-section panel-3" id="panel-3" aria-label="Part 3 - Map">
     <div class="section-content container">
       <img id="map-trigger" class="image-button"
         src="assets/buttons/MAP1.PNG" alt="Map" role="button" tabindex="0" />
-    </div>
-
-    <div id="map-poster" class="map-poster" aria-hidden="true">
-      <img src="assets/parallax/map1.png" alt="" class="map-poster__img" />
     </div>
   </section>
 
@@ -94,21 +97,6 @@
     <div class="section-content container">
       <h2>Details & Schedule</h2>
       <p>Accommodations, timing, directions, etc.</p>
-    </div>
-  </section>
-
-  <!-- PANEL 5 -->
-  <section class="parallax-section panel-5" id="panel-5" aria-label="Part 5 - Registry">
-    <div class="section-content container">
-      <h2>Registry</h2>
-      <p>Links and thanks.</p>
-    </div>
-  </section>
-
-  <!-- PANEL 6 -->
-  <section class="parallax-section panel-6" id="panel-6" aria-label="Part 6 - Footer">
-    <div class="section-content container">
-      <footer><small>© Mars & Bianca</small></footer>
     </div>
   </section>
 
