@@ -40,18 +40,22 @@
     }
 
     /* ==============================
-       SPEED MULTIPLIERS (NEW)
+       SPEED (FASTER)
        ============================== */
-    const LAKE_SPEED_MULT   = 2.0;   // lake scales 2× faster
-    const CRATER_SPEED_MULT = 2.4;   // crater slightly faster than lake
-    const SETTLE_SPEED_MULT = 2.0;   // bottom → midpoint move is 2×
+    const LAKE_SPEED_MULT   = 3.2;   // much faster
+    const CRATER_SPEED_MULT = 4.2;   // even faster
+    const SETTLE_SPEED_MULT = 3.0;   // slide-in from bottom quickly
+    const SETTLE_SPAN = 0.10;        // only first 10% of panel2 height
 
     /* ==============================
-       OTHER TUNING (UNCHANGED)
+       OTHER TUNING
        ============================== */
     const SKY_SCALE_MAX = 1.14;
 
-    const DRIFT_X_MULT = 0.48;
+    // clouds move across panel1 -> half panel2, and panel2 clouds also move at the same time
+    const CLOUD_SPAN_PANEL2_FRACTION = 0.50;
+
+    const DRIFT_X_MULT = 0.50;
     const DRIFT_Y_MULT = 0.14;
 
     const SAFE_RADIUS_VMIN = 0.66;
@@ -60,8 +64,6 @@
 
     const LAKE_SCALE_MAX = 1.25;
     const CRATER_SCALE_MIN = 0.30;
-
-    const SETTLE_SPAN = 0.22; // fraction of panel2 height
 
     const state = { layers: [] };
 
@@ -83,14 +85,16 @@
         const dir   = parseFloat(el.dataset.dir   || "1");
         const z     = parseInt(el.dataset.z || "1", 10) || 1;
 
-        const sizeMult = isMobile ? 1.75 : (vw <= 900 ? 1.20 : 1.0);
-        const w = clamp(vw * size * sizeMult, 150, 700);
+        // Mobile: bigger, more centered
+        const sizeMult = isMobile ? 1.85 : (vw <= 900 ? 1.20 : 1.0);
+        const w = clamp(vw * size * sizeMult, 160, 720);
         const h = w * 0.60;
 
         el.style.width = `${Math.round(w)}px`;
         el.style.height = `${Math.round(h)}px`;
         el.style.zIndex = String(Math.min(6, z));
 
+        // vertical drift direction (no flips)
         const dirY = (i % 3 === 0) ? -1 : 1;
 
         return { el, startX, startY, endX, endY, speed, dir, dirY, z, i };
@@ -110,78 +114,76 @@
       const p3H   = panel3 ? panel3.offsetHeight : vh;
       const p4Top = panel4 ? getAbsTop(panel4) : (p3Top + p3H);
 
-      /* ---------- SKY PROGRESS ---------- */
-      const skyEnd = p2Top + p2H * 0.50;
-      const pSky = clamp((scrollY - p1Top) / Math.max(1, (skyEnd - p1Top)), 0, 1);
+      // One unified cloud progress: panel1 start -> half of panel2
+      const cloudsEnd = p2Top + p2H * CLOUD_SPAN_PANEL2_FRACTION;
+      const pCloud = clamp((scrollY - p1Top) / Math.max(1, (cloudsEnd - p1Top)), 0, 1);
 
-      /* ---------- PANEL 2 CLOUD CLEAR ---------- */
-      const pClear2 = clamp((scrollY - p2Top) / Math.max(1, (p3Top - p2Top)), 0, 1);
-
-      /* ---------- LAKE / CRATER PROGRESS (FASTER) ---------- */
+      // Lake/crater active span: panel2 start -> panel4 start
       const lakeStart = p2Top;
-      const lakeEnd   = p4Top;
-
+      const lakeEnd = p4Top;
       let pLake = clamp((scrollY - lakeStart) / Math.max(1, (lakeEnd - lakeStart)), 0, 1);
-      pLake = clamp(pLake * LAKE_SPEED_MULT, 0, 1); // 🔥 SPEED UP
+
+      // Make scale progress much faster
+      const pLakeFast = clamp(pLake * LAKE_SPEED_MULT, 0, 1);
+      const pCraterFast = clamp(pLake * CRATER_SPEED_MULT, 0, 1);
 
       if (prefersReducedMotion) return;
 
-      /* ---------- SKY ---------- */
+      // SKY scales while clouds clear
       if (skyBg) {
-        const s = 1 + pSky * (SKY_SCALE_MAX - 1);
+        const s = 1 + pCloud * (SKY_SCALE_MAX - 1);
         skyBg.style.transform = `scale(${s})`;
       }
 
-      /* ---------- LAKE SCENE VISIBILITY ---------- */
+      // Lake scene visibility (instant)
       if (lakeScene) {
         const active = (scrollY >= lakeStart - 1) && (scrollY < lakeEnd - 1);
         lakeScene.style.visibility = active ? "visible" : "hidden";
       }
 
-      /* ---------- LAKE POSITION (BOTTOM → MIDPOINT, FASTER) ---------- */
+      // Lake scene slide-in from bottom at start of panel2 (quick), then stays pinned
       const settleSpanPx = p2H * SETTLE_SPAN;
       let settleT = clamp((scrollY - p2Top) / Math.max(1, settleSpanPx), 0, 1);
-      settleT = clamp(settleT * SETTLE_SPEED_MULT, 0, 1); // 🔥 SPEED UP
+      settleT = clamp(settleT * SETTLE_SPEED_MULT, 0, 1);
 
-      const startOffsetPx = isMobile ? (vh * 0.38) : (vh * 0.42);
+      // starts below viewport -> moves to center
+      const startOffsetPx = isMobile ? (vh * 0.70) : (vh * 0.78);
       const yOffset = (1 - settleT) * startOffsetPx;
 
       if (lakeScene) {
-        lakeScene.style.transform =
-          `translate3d(-50%, calc(-50% + ${yOffset.toFixed(1)}px), 0)`;
+        lakeScene.style.transform = `translate3d(-50%, calc(-50% + ${yOffset.toFixed(1)}px), 0)`;
       }
 
-      /* ---------- LAKE SCALE (FASTER) ---------- */
+      // Only scale continues (fast)
       if (lake) {
-        const ls = 1 + pLake * (LAKE_SCALE_MAX - 1);
+        const ls = 1 + pLakeFast * (LAKE_SCALE_MAX - 1);
         lake.style.transform = `scale(${ls.toFixed(3)})`;
       }
 
-      /* ---------- CRATER SCALE (EVEN FASTER) ---------- */
       if (crater) {
-        let pCrater = clamp(pLake * CRATER_SPEED_MULT, 0, 1);
-        const cs = 1 - pCrater * (1 - CRATER_SCALE_MIN);
-        crater.style.transform =
-          `translate3d(-50%, 0, 0) scale(${cs.toFixed(3)})`;
+        const cs = 1 - pCraterFast * (1 - CRATER_SCALE_MIN);
+        crater.style.transform = `translate3d(-50%, 0, 0) scale(${cs.toFixed(3)})`;
       }
 
-      /* ---------- CLOUDS ---------- */
+      // Safe zone for std-sky (panel1 only)
       const p1W = panel1 ? panel1.clientWidth : vw;
       const p1Hpx = panel1 ? panel1.clientHeight : vh;
       const sx = p1W * 0.5;
       const sy = p1Hpx * 0.5;
       const safeR = Math.min(vw, vh) * SAFE_RADIUS_VMIN;
 
-      const centerPull = isMobile ? 0.26 : 0.12;
-      const xClampMin = isMobile ? 12 : 6;
-      const xClampMax = isMobile ? 88 : 94;
+      // Keep clouds visible + centered on mobile
+      const centerPull = isMobile ? 0.34 : 0.12;
+      const xClampMin = isMobile ? 10 : 6;
+      const xClampMax = isMobile ? 90 : 94;
 
       state.layers.forEach((ln) => {
         const el = ln.el;
         const parent = el.closest(".parallax-section");
         const pid = parent ? parent.id : "";
 
-        const p = (pid === "panel-2") ? pClear2 : pSky;
+        // Panel2 clouds move at the same time as panel1 clouds:
+        const p = pCloud;
 
         let xPct = ln.startX + (ln.endX - ln.startX) * p;
         let yPct = ln.startY + (ln.endY - ln.startY) * p;
@@ -205,18 +207,33 @@
             yPx += ny * push;
           }
 
+          const rw = p1W * SAFE_RECT_W;
+          const rh = p1Hpx * SAFE_RECT_H;
+          const rx0 = sx - rw * 0.5, rx1 = sx + rw * 0.5;
+          const ry0 = sy - rh * 0.5, ry1 = sy + rh * 0.5;
+
+          if (xPx > rx0 && xPx < rx1 && yPx > ry0 && yPx < ry1) {
+            const toLeft = xPx - rx0;
+            const toRight = rx1 - xPx;
+            xPx += (toLeft < toRight) ? -(toLeft + 96) : (toRight + 96);
+            yPx += (yPx < sy) ? -18 : 28;
+          }
+
           xPct = clamp((xPx / p1W) * 100, xClampMin, xClampMax);
           yPct = (yPx / p1Hpx) * 100;
         }
 
-        const driftX = ln.dir  * ln.speed * p * (vw * DRIFT_X_MULT);
+        // Clearing drift (translation only, NO scaling flips)
+        const driftX = ln.dir * ln.speed * p * (vw * DRIFT_X_MULT);
         const driftY = ln.dirY * ln.speed * p * (vh * DRIFT_Y_MULT);
         const float  = Math.sin((p * 2 + ln.i) * Math.PI) * (10 + ln.z * 2);
 
         el.style.left = `${xPct}%`;
         el.style.top  = `${yPct}%`;
+
+        // Force scaleX(1) scaleY(1) to prevent ANY accidental flips.
         el.style.transform =
-          `translate3d(-50%, -50%, 0) translate3d(${driftX.toFixed(1)}px, ${(driftY + float).toFixed(1)}px, 0)`;
+          `translate3d(-50%, -50%, 0) translate3d(${driftX.toFixed(1)}px, ${(driftY + float).toFixed(1)}px, 0) scaleX(1) scaleY(1)`;
       });
     }
 
