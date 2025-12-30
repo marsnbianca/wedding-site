@@ -4,79 +4,79 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mars & Bianca — Wedding</title>
-
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-  <!-- Sky background (scales until half of panel 2) -->
+  <!-- Sky background -->
   <div id="sky-bg" class="sky-bg" aria-hidden="true"></div>
 
-  <!-- PANEL 1: Clouds + Save the date -->
+  <!-- PANEL 1 -->
   <section class="parallax-section panel-1" id="panel-1" aria-label="Part 1 - Save the date">
 
     <div id="std-sky-wrap" class="std-sky-wrap" aria-hidden="true">
       <div id="std-sky" class="std-sky"></div>
     </div>
 
-    <!-- Clouds (scattered vertically; different directions/speeds) -->
+    <!-- Clouds (only panel 1) -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud1.png"
-      data-start-x="12" data-start-y="18"
-      data-end-x="-22" data-end-y="10"
-      data-size="0.18" data-speed="1.10" data-drift="0.55" data-z="2"></div>
+      data-start-x="12" data-start-y="14"
+      data-end-x="-26" data-end-y="8"
+      data-size="0.18" data-speed="1.05" data-dir="-1" data-z="2" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud2.png"
-      data-start-x="88" data-start-y="16"
-      data-end-x="132" data-end-y="10"
-      data-size="0.22" data-speed="1.35" data-drift="0.65" data-z="2"></div>
+      data-start-x="90" data-start-y="16"
+      data-end-x="142" data-end-y="10"
+      data-size="0.22" data-speed="1.30" data-dir="1" data-z="2" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud3.png"
-      data-start-x="16" data-start-y="48"
-      data-end-x="-24" data-end-y="62"
-      data-size="0.16" data-speed="0.95" data-drift="0.48" data-z="1"></div>
+      data-start-x="14" data-start-y="44"
+      data-end-x="-26" data-end-y="62"
+      data-size="0.16" data-speed="0.95" data-dir="-1" data-z="1" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud4.png"
-      data-start-x="90" data-start-y="44"
-      data-end-x="138" data-end-y="62"
-      data-size="0.15" data-speed="1.05" data-drift="0.52" data-z="1"></div>
+      data-start-x="92" data-start-y="46"
+      data-end-x="150" data-end-y="64"
+      data-size="0.15" data-speed="1.10" data-dir="1" data-z="1" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud5.png"
       data-start-x="10" data-start-y="78"
-      data-end-x="-28" data-end-y="92"
-      data-size="0.18" data-speed="1.20" data-drift="0.60" data-z="1"></div>
+      data-end-x="-30" data-end-y="94"
+      data-size="0.18" data-speed="1.25" data-dir="-1" data-z="1" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud2.png"
-      data-start-x="92" data-start-y="78"
-      data-end-x="142" data-end-y="94"
-      data-size="0.17" data-speed="1.30" data-drift="0.58" data-z="1"></div>
+      data-start-x="92" data-start-y="80"
+      data-end-x="150" data-end-y="96"
+      data-size="0.17" data-speed="1.35" data-dir="1" data-z="1" aria-hidden="true"></div>
 
-    <!-- These start near center but JS pushes them out of the safe zone -->
+    <!-- near-center ones (JS will push away from std-sky keepout) -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud4.png"
-      data-start-x="38" data-start-y="30"
-      data-end-x="-8" data-end-y="22"
-      data-size="0.15" data-speed="1.55" data-drift="0.70" data-z="2"></div>
+      data-start-x="38" data-start-y="28"
+      data-end-x="-10" data-end-y="18"
+      data-size="0.15" data-speed="1.55" data-dir="-1" data-z="2" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud1.png"
-      data-start-x="64" data-start-y="32"
-      data-end-x="112" data-end-y="22"
-      data-size="0.15" data-speed="1.45" data-drift="0.68" data-z="2"></div>
+      data-start-x="64" data-start-y="30"
+      data-end-x="118" data-end-y="18"
+      data-size="0.15" data-speed="1.45" data-dir="1" data-z="2" aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 2: RSVP + sticky lake/crater scene -->
+  <!-- PANEL 2 -->
   <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - RSVP">
-
-    <!-- sticky scene: sits around middle of panel2, replaces sky visually -->
-    <div class="scene2-sticky" aria-hidden="true">
-      <div id="lake" class="lake"></div>
-      <div id="crater" class="crater"></div>
+    <!-- absolute scene layer (does not affect flex centering) -->
+    <div class="scene2-layer" aria-hidden="true">
+      <div class="scene2-sticky">
+        <div id="lake" class="lake"></div>
+        <div id="crater" class="crater"></div>
+      </div>
     </div>
 
     <div class="section-content container">
@@ -86,14 +86,13 @@
     </div>
   </section>
 
-  <!-- PANEL 3: MAP -->
+  <!-- PANEL 3 -->
   <section class="parallax-section panel-3" id="panel-3" aria-label="Part 3 - Map">
     <div class="section-content container">
       <img id="map-trigger" class="image-button"
         src="assets/buttons/MAP1.PNG" alt="Map" role="button" tabindex="0" />
     </div>
 
-    <!-- pinned poster (not a modal) -->
     <div id="map-poster" class="map-poster" aria-hidden="true">
       <img src="assets/parallax/map1.png" alt="" class="map-poster__img" />
     </div>
