@@ -5,7 +5,6 @@
   --panel-height: 100vh;
 }
 
-/* responsive overrides */
 @media (max-width: 900px) {
   :root { --panel-height: 80vh; }
 }
@@ -32,19 +31,17 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-
   background-image: url("assets/parallax/sky1.png");
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center top;
-
   transform-origin: center top;
-  will-change: transform;
+  will-change: transform, opacity;
   z-index: 0;
   pointer-events: none;
 }
 
-/* Parallax sections */
+/* Sections */
 .parallax-section{
   position: relative;
   width: 100%;
@@ -69,7 +66,7 @@ body {
   background: transparent !important;
 }
 
-/* Parallax layers */
+/* Layers */
 .parallax-layer{
   position: absolute;
   top: 0;
@@ -80,20 +77,28 @@ body {
   background-size: contain;
   will-change: transform, opacity;
   backface-visibility: hidden;
-  z-index: 2;
   pointer-events: none;
 }
 
-.cloud-layer { opacity: 0.98; mix-blend-mode: normal; }
-.parallax-layer--overlay { mix-blend-mode: overlay; opacity: 0.28; z-index: 3; }
+.cloud-layer {
+  opacity: 0.98;
+  mix-blend-mode: normal;
+  z-index: 2;
+}
 
-/* std-sky element (centered in panel 1) */
+.parallax-layer--overlay {
+  mix-blend-mode: overlay;
+  opacity: 0.28;
+  z-index: 3;
+}
+
+/* std-sky element, centered in panel 1 and always above clouds */
 .std-sky-wrap{
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate3d(-50%, -50%, 0);
-  z-index: 6;            /* Above clouds */
+  z-index: 8;
   pointer-events: none;
   will-change: transform, opacity;
 }
@@ -106,34 +111,44 @@ body {
   background-position: center center;
   background-size: contain;
   will-change: transform;
-  animation: stdBreath 6.5s ease-in-out infinite;
+  animation: stdBreath 6.2s ease-in-out infinite;
 }
 
-/* breathing / floating loop */
 @keyframes stdBreath{
   0%   { transform: translate3d(0, 0, 0) scale(1); }
   50%  { transform: translate3d(0, -10px, 0) scale(1.03); }
   100% { transform: translate3d(0, 0, 0) scale(1); }
 }
 
-/* content styling */
+/* Content */
 .container { max-width: var(--max-width); margin: 0 auto; padding: calc(var(--space) + 4vw); }
-.section-content { position: relative; z-index: 10; text-align: center; color: #04293a; padding: 2rem; display:flex; flex-direction:column; align-items:center; gap:1rem; }
+.section-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  color: #04293a;
+  padding: 2rem;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:1rem;
+}
 .section-content h1 { margin:0; font-size: clamp(1.6rem, 4.5vw, 3.25rem); }
 .section-content .lead { margin:0; color:#064a6f; }
 
-/* image buttons */
-.image-button { display:inline-block; margin:.5rem auto; cursor:pointer; border:0; background:transparent; width:auto; height: clamp(3.5rem, 8vh, 5rem); object-fit:contain; }
-
-/* responsive tweaks */
-@media (max-width: 900px) {
-  .parallax-section { min-height: 32vh; max-height: calc(var(--panel-height) * 1.15); }
+/* Buttons */
+.image-button {
+  display:inline-block;
+  margin:.5rem auto;
+  cursor:pointer;
+  border:0;
+  background:transparent;
+  width:auto;
+  height: clamp(3.5rem, 8vh, 5rem);
+  object-fit:contain;
 }
-@media (max-width: 480px) {
-  .parallax-section { min-height: 28vh; max-height: calc(var(--panel-height) * 1.1); }
-}
 
-/* reduced motion fallback */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .parallax-layer, .sky-bg, .std-sky-wrap, .std-sky {
     animation: none !important;
