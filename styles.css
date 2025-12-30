@@ -19,6 +19,31 @@ body {
   overflow-x: hidden;
 }
 
+/* Extended sky background (uses sky1.png). 
+   Height set to cover panel 1 + panel 2 + ~10% of panel 3.
+   Adjusted per breakpoint below.
+*/
+.sky-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 210vh; /* default: 100vh + 100vh + 10vh = 210vh */
+  background-image: url("assets/parallax/sky1.png");
+  background-size: cover;
+  background-position: center top;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* On medium screens where panels may be 70vh, set sky-bg accordingly */
+@media (max-width: 900px) {
+  .sky-bg { height: 147vh; } /* 70vh + 70vh + 7vh = 147vh */
+}
+@media (max-width: 480px) {
+  .sky-bg { height: 126vh; } /* 60vh + 60vh + 6vh = 126vh */
+}
+
 /* Centered content container used only for textual content */
 .container {
   max-width: var(--max-width);
@@ -32,38 +57,38 @@ body {
   width: 100%;
   height: var(--panel-height);
   min-height: 360px;
-  overflow: hidden;
+  overflow: visible; /* allow clouds to move off-screen */
   display: flex;
   align-items: center;
   justify-content: center;
   isolation: isolate;
 }
 
-/* Ombré sky gradients */
+/* Ombré sky gradients for panels (blend visually with sky-bg) */
 .panel-clouds {
   background: linear-gradient(180deg,
-    #e6f9ff 0%,
-    #d8f2ff 30%,
-    #bfe9ff 60%,
-    #b3e2ff 100%);
+    rgba(230,249,255,0.7) 0%,
+    rgba(216,242,255,0.6) 30%,
+    rgba(191,233,255,0.55) 60%,
+    rgba(179,226,255,0.5) 100%);
 }
 
 .panel-sky {
   background: linear-gradient(180deg,
-    #d8f2ff 0%,
-    #c4e7ff 30%,
-    #a9ddff 65%,
-    #8fcff7 100%);
+    rgba(216,242,255,0.45) 0%,
+    rgba(196,231,255,0.45) 30%,
+    rgba(169,221,255,0.45) 65%,
+    rgba(143,207,247,0.45) 100%);
 }
 
 .panel-content {
   background: linear-gradient(180deg,
-    #cfeeff 0%,
-    #e6f7ff 45%,
-    #f7fbff 100%);
+    rgba(207,238,255,0.35) 0%,
+    rgba(230,247,255,0.3) 45%,
+    rgba(247,251,255,0.2) 100%);
 }
 
-/* Parallax layers (we position cloud-layer via JS) */
+/* Parallax layers (clouds and other decorative layers) - JS controls size/position */
 .parallax-layer{
   position: absolute;
   top: 0;
@@ -74,13 +99,12 @@ body {
   background-size: contain;
   will-change: transform;
   backface-visibility: hidden;
-  z-index: 0;
+  z-index: 1; /* clouds and decorative layers sit above sky-bg */
   pointer-events: none;
 }
 
-/* Cloud layers: default visual rules (JS controls width/height, left/top) */
+/* Cloud layers default rules */
 .cloud-layer {
-  background-size: 100% 100%;
   opacity: 0.98;
   mix-blend-mode: normal;
 }
@@ -89,7 +113,7 @@ body {
 .parallax-layer--overlay{
   mix-blend-mode: overlay;
   opacity: 0.28;
-  z-index: 2;
+  z-index: 3;
 }
 
 /* Foreground content */
@@ -150,18 +174,12 @@ body {
 footer small { color: #bfcbd6; }
 
 /* Responsive adjustments */
-@media (min-width: 1200px) {
-  /* Desktop: make clouds bigger visually via sizes chosen in JS (handled there) */
-}
-
 @media (max-width: 900px) {
   :root { --panel-height: 70vh; }
   .parallax-section{ min-height: 420px; }
+
   .section-content { padding: 1rem; }
   .image-button { height: clamp(3rem, 9vh, 4.5rem); }
-
-  /* on tablet, ensure cloud elements remain positioned by JS (no wrapper color) */
-  .parallax-layer { background-size: 100% 100%; }
 }
 
 @media (max-width: 480px) {
@@ -169,7 +187,7 @@ footer small { color: #bfcbd6; }
   .image-button { height: clamp(2.6rem, 10vh, 4rem); }
 }
 
-/* Reduce motion fallback */
+/* Respect prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
   .parallax-layer { transition: none !important; transform: none !important; background-position: center 50% !important; }
 }
