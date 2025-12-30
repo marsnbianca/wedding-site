@@ -13,71 +13,61 @@
   <div id="sky-bg" class="sky-bg" aria-hidden="true"></div>
 
   <!-- PANEL 1: CLOUDS + STD SKY -->
-  <section class="parallax-section panel-1" id="panel-1" aria-label="Part 1 - Clouds">
+  <section class="parallax-section panel-1" id="panel-1" aria-label="Part 1 - Save the date">
     <!-- Save-the-date element -->
     <div id="std-sky-wrap" class="std-sky-wrap" aria-hidden="true">
       <div id="std-sky" class="std-sky"></div>
     </div>
 
-    <!-- Clouds (Panel 1) -->
+    <!-- Panel 1 clouds (kept away from center by JS safe zone) -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud1.png"
-      data-start-x="86" data-start-y="16" data-end-x="122" data-end-y="10"
-      data-size="0.22" data-side-speed="1.20" data-dir="1" data-z="2" aria-hidden="true"></div>
+      data-start-x="92" data-start-y="16" data-end-x="130" data-end-y="10"
+      data-size="0.22" data-side-speed="1.25" data-dir="1" data-z="2" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud2.png"
-      data-start-x="14" data-start-y="18" data-end-x="-14" data-end-y="12"
+      data-start-x="10" data-start-y="18" data-end-x="-22" data-end-y="12"
       data-size="0.16" data-side-speed="0.95" data-dir="-1" data-z="1" aria-hidden="true"></div>
 
-    <!-- closer to center but safe-zone protected -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud4.png"
-      data-start-x="30" data-start-y="28" data-end-x="6" data-end-y="22"
-      data-size="0.13" data-side-speed="0.75" data-dir="-1" data-z="2" aria-hidden="true"></div>
+      data-start-x="14" data-start-y="38" data-end-x="-18" data-end-y="32"
+      data-size="0.13" data-side-speed="0.70" data-dir="-1" data-z="2" aria-hidden="true"></div>
 
-    <!-- closer to center but safe-zone protected -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud3.png"
-      data-start-x="70" data-start-y="30" data-end-x="96" data-end-y="22"
+      data-start-x="90" data-start-y="40" data-end-x="126" data-end-y="34"
       data-size="0.14" data-side-speed="0.85" data-dir="1" data-z="2" aria-hidden="true"></div>
 
-    <!-- lower clouds (must never collide with std-sky while it moves up) -->
+    <!-- lower clouds drift sideways and slightly down so they never collide with rising std-sky -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud5.png"
-      data-start-x="16" data-start-y="74" data-end-x="-18" data-end-y="90"
-      data-size="0.14" data-side-speed="0.90" data-dir="-1" data-z="1" aria-hidden="true"></div>
+      data-start-x="14" data-start-y="78" data-end-x="-22" data-end-y="94"
+      data-size="0.14" data-side-speed="0.95" data-dir="-1" data-z="1" aria-hidden="true"></div>
 
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud1.png"
-      data-start-x="84" data-start-y="78" data-end-x="124" data-end-y="94"
-      data-size="0.16" data-side-speed="1.05" data-dir="1" data-z="1" aria-hidden="true"></div>
+      data-start-x="88" data-start-y="80" data-end-x="132" data-end-y="96"
+      data-size="0.16" data-side-speed="1.10" data-dir="1" data-z="1" aria-hidden="true"></div>
 
-    <!-- mid-lower opposite direction -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud2.png"
-      data-start-x="56" data-start-y="66" data-end-x="22" data-end-y="82"
+      data-start-x="30" data-start-y="62" data-end-x="4" data-end-y="78"
       data-size="0.12" data-side-speed="0.70" data-dir="-1" data-z="2" aria-hidden="true"></div>
 
-    <!-- small accent cloud -->
     <div class="parallax-layer cloud-layer"
       data-bg="assets/parallax/cloud4.png"
-      data-start-x="92" data-start-y="46" data-end-x="128" data-end-y="50"
+      data-start-x="96" data-start-y="60" data-end-x="135" data-end-y="64"
       data-size="0.11" data-side-speed="0.60" data-dir="1" data-z="1" aria-hidden="true"></div>
   </section>
 
-  <!-- PANEL 2: TWO CLOUDS ON TOP + RSVP ONLY -->
-  <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - RSVP">
-    <!-- top clouds -->
-    <div class="parallax-layer cloud-layer"
-      data-bg="assets/parallax/cloud3.png"
-      data-start-x="24" data-start-y="12" data-end-x="-10" data-end-y="8"
-      data-size="0.14" data-side-speed="0.75" data-dir="-1" data-z="1" aria-hidden="true"></div>
-
-    <div class="parallax-layer cloud-layer"
-      data-bg="assets/parallax/cloud5.png"
-      data-start-x="78" data-start-y="14" data-end-x="116" data-end-y="10"
-      data-size="0.12" data-side-speed="0.95" data-dir="1" data-z="2" aria-hidden="true"></div>
+  <!-- PANEL 2: LAKE + CRATER over sky + RSVP only -->
+  <section class="parallax-section panel-2" id="panel-2" aria-label="Part 2 - RSVP and Scene">
+    <div class="scene2-wrap" aria-hidden="true">
+      <div id="lake" class="lake"></div>
+      <div id="crater" class="crater"></div>
+    </div>
 
     <div class="section-content container">
       <img id="rsvp-trigger" class="image-button rsvp-btn"
@@ -86,16 +76,18 @@
     </div>
   </section>
 
-  <!-- PANEL 3: LAKE + CRATER (TOP-ALIGNED) + MAP BUTTON -->
-  <section class="parallax-section panel-3" id="panel-3" aria-label="Part 3 - Map and Scene">
-    <div class="scene-wrap" aria-hidden="true">
-      <div id="lake" class="lake"></div>
-      <div id="crater" class="crater"></div>
-    </div>
-
+  <!-- PANEL 3: MAP BUTTON + MAP POSTER -->
+  <section class="parallax-section panel-3" id="panel-3" aria-label="Part 3 - Map">
     <div class="section-content container">
       <img id="map-trigger" class="image-button"
         src="assets/buttons/MAP1.PNG" alt="Map" role="button" tabindex="0" />
+    </div>
+
+    <!-- Hidden map poster that flies in -->
+    <div id="map-poster" class="map-poster" aria-hidden="true">
+      <div class="map-poster__inner">
+        <img src="assets/parallax/map1.png" alt="" class="map-poster__img" />
+      </div>
     </div>
   </section>
 
