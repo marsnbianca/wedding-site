@@ -9,74 +9,70 @@
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const skyBg = document.getElementById("sky-bg");
-    const lakeBg = document.getElementById("lake-bg");
-    const craterBg = document.getElementById("crater-bg");
-
     const panel1 = document.getElementById("panel-1");
     const panel2 = document.getElementById("panel-2");
 
     const stdWrap = document.getElementById("std-sky-wrap");
 
-    const clouds = Array.from(document.querySelectorAll(".cloud-layer"));
+    const lake = document.getElementById("lake");
+    const crater = document.getElementById("crater");
+
+    const mapTrigger = document.getElementById("map-trigger");
+    const mapPoster = document.getElementById("map-poster");
+
+    const cloudEls = Array.from(document.querySelectorAll(".cloud-layer"));
 
     const state = {
       vw: window.innerWidth,
       vh: window.innerHeight,
       p1Top: 0,
       p2Top: 0,
-      p2Height: 1,
-      p2HalfTop: 0,
+      p2H: 1,
+      endScroll: 1,
       layers: []
     };
 
-    function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
-    function smoothstep(edge0, edge1, x) {
-      const t = clamp((x - edge0) / (edge1 - edge0), 0, 1);
+    function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
+    function smoothstep(a, b, x) {
+      const t = clamp((x - a) / (b - a), 0, 1);
       return t * t * (3 - 2 * t);
     }
-    function absTop(el) {
-      const r = el.getBoundingClientRect();
-      return window.scrollY + r.top;
-    }
-    function progressBetween(scrollY, aTop, bTop) {
-      const span = Math.max(1, bTop - aTop);
-      return clamp((scrollY - aTop) / span, 0, 1);
-    }
 
-    // Tunables
+    // Tunables (works on mobile too)
     const SKY_SCALE_MAX = 1.14;
 
-    // Clouds clear during panel 1 -> half panel 2
-    const CLOUD_CLEAR_END = 0.50; // 50% into panel2
+    // We animate everything from start of panel1 until HALF of panel2
+    const END_AT_PANEL2_FRACTION = 0.50;
 
-    // Keep-out zone around std-sky in panel 1 (very strong)
-    const SAFE_RADIUS_VMIN = 0.58;
-    const SAFE_RECT_W = 0.60;  // fraction of panel width
-    const SAFE_RECT_H = 0.52;  // fraction of panel height
+    // Cloud drift multiplier (px)
+    const DRIFT_X_MULT = 0.42; // width proportion
+    const DRIFT_Y_MULT = 0.14; // height proportion
 
-    // Lake replaces sky at half panel2, scales to 1.25
+    // Strong safe zone around std-sky
+    const SAFE_RADIUS_VMIN = 0.60;
+    const SAFE_RECT_W = 0.62;
+    const SAFE_RECT_H = 0.54;
+
+    // Lake/crater transforms
     const LAKE_SCALE_MAX = 1.25;
     const CRATER_SCALE_MIN = 0.50;
 
-    // Std-sky scroll exit during same clear span
-    const STD_EXIT_Y_VH = 0.65;
-    const STD_SCALE_MIN = 0.82;
+    // std-sky scroll motion
+    const STD_EXIT_Y_VH = 0.55;
+    const STD_SCALE_MIN = 0.88;
 
     function setup() {
       state.vw = window.innerWidth;
       state.vh = window.innerHeight;
 
-      if (panel1) state.p1Top = absTop(panel1);
-      if (panel2) {
-        state.p2Top = absTop(panel2);
-        const r2 = panel2.getBoundingClientRect();
-        state.p2Height = r2.height || state.vh;
-        state.p2HalfTop = state.p2Top + state.p2Height * 0.5;
-      }
+      state.p1Top = panel1 ? panel1.offsetTop : 0;
+      state.p2Top = panel2 ? panel2.offsetTop : state.vh;
+      state.p2H = panel2 ? panel2.offsetHeight : state.vh;
 
-      // Setup clouds (size + background + initial anchor)
-      state.layers = clouds.map((el, idx) => {
-        const bg = el.dataset.bg || "";
+      state.endScroll = state.p2Top + state.p2H * END_AT_PANEL2_FRACTION;
+
+      state.layers = cloudEls.map((el, i) => {
+        const bg = el.dataset.bg;
         if (bg) el.style.backgroundImage = `url("${bg}")`;
 
         const startX = parseFloat(el.dataset.startX || "50");
@@ -86,12 +82,11 @@
 
         const size = parseFloat(el.dataset.size || "0.16");
         const speed = parseFloat(el.dataset.speed || "1.0");
-        const fadeAt = parseFloat(el.dataset.fade || "0.92");
+        const drift = parseFloat(el.dataset.drift || "0.55");
         const z = parseInt(el.dataset.z || "1", 10) || 1;
 
-        // responsive sizing
-        const sizeMult = (state.vw <= 480) ? 1.18 : (state.vw <= 900 ? 1.08 : 1.0);
-        const w = clamp(state.vw * size * sizeMult, 76, 560);
+        const sizeMult = (state.vw <= 480) ? 1.25 : (state.vw <= 900 ? 1.10 : 1.0);
+        const w = clamp(state.vw * size * sizeMult, 72, 560);
         const h = w * 0.60;
 
         el.style.width = `${Math.round(w)}px`;
@@ -100,35 +95,23 @@
         el.style.left = `${startX}%`;
         el.style.top = `${startY}%`;
 
-        // deterministic different drift directions
-        const dirX = (idx % 2 === 0) ? -1 : 1;
-        const dirY = (idx % 3 === 0) ? -1 : 1;
+        // Alternate directions
+        const dirX = (i % 2 === 0) ? -1 : 1;
+        const dirY = (i % 3 === 0) ? -1 : 1;
 
-        return { el, startX, startY, endX, endY, size, speed, fadeAt, z, dirX, dirY, idx };
+        return { el, startX, startY, endX, endY, speed, drift, dirX, dirY, z, i };
       });
 
-      // Reset backgrounds
-      if (skyBg) { skyBg.style.transform = "scale(1)"; skyBg.style.opacity = "1"; }
-      if (lakeBg) { lakeBg.style.transform = "translate3d(0,-50%,0) scale(1)"; lakeBg.style.opacity = "0"; }
-      if (craterBg) { craterBg.style.transform = "scale(1)"; }
-      if (stdWrap) { stdWrap.style.opacity = "1"; stdWrap.style.transform = "translate3d(-50%, -50%, 0)"; }
+      // Reset scene visibility
+      if (lake) lake.style.opacity = "0";
+      if (crater) crater.style.opacity = "0";
 
-      // Position lake at halfway point of panel 2 (in viewport coordinates)
-      positionLakeAtPanel2Half();
-    }
+      // Reset poster hidden state (but keep class if user toggled)
+      if (mapPoster && !mapPoster.classList.contains("is-shown")) {
+        // nothing
+      }
 
-    function positionLakeAtPanel2Half() {
-      if (!lakeBg || !panel2) return;
-
-      // Put the lake centered on the panel-2 midpoint in viewport space.
-      // Compute the panel2 midpoint's Y in document coords, then convert to viewport Y.
-      const midDocY = state.p2Top + state.p2Height * 0.5;
-      const viewportY = midDocY - (window.scrollY || window.pageYOffset);
-
-      // We set lakeBg's top in viewport coordinates since it's fixed.
-      // Clamp so it's not weird on small screens.
-      const topPx = clamp(viewportY, state.vh * 0.25, state.vh * 0.75);
-      lakeBg.style.top = `${topPx}px`;
+      render();
     }
 
     function render() {
@@ -136,111 +119,121 @@
 
       const scrollY = window.scrollY || window.pageYOffset;
 
-      // Progress span: panel1 top -> half panel2
-      const end = state.p2Top + state.p2Height * CLOUD_CLEAR_END;
-      const p = progressBetween(scrollY, state.p1Top, end);
+      // Progress from panel1 start to half panel2
+      const p = clamp((scrollY - state.p1Top) / Math.max(1, (state.endScroll - state.p1Top)), 0, 1);
 
-      // SKY: scale up until half of panel2
+      // SKY scale + fade (until lake takes over)
       if (skyBg) {
         const s = 1 + p * (SKY_SCALE_MAX - 1);
         skyBg.style.transform = `scale(${s})`;
-        // fade sky out as we approach half of panel2 (so lake takes over)
-        skyBg.style.opacity = String(1 - smoothstep(0.65, 1.0, p));
+        // fade out later so it is visible into panel2
+        skyBg.style.opacity = String(1 - smoothstep(0.62, 1.0, p));
       }
 
-      // LAKE: crossfade in around mid panel2 and scale to 1.25
-      if (lakeBg) {
-        const lakeIn = smoothstep(0.55, 0.90, p); // starts coming in earlier
-        lakeBg.style.opacity = String(lakeIn);
-        const lakeScale = 1 + p * (LAKE_SCALE_MAX - 1);
-        lakeBg.style.transform = `translate3d(0,-50%,0) scale(${lakeScale.toFixed(3)})`;
+      // LAKE/CRATER: visible and scaling during same progress window
+      const lakeIn = smoothstep(0.55, 0.92, p);
+      if (lake) {
+        lake.style.opacity = String(lakeIn);
+        const ls = 1 + p * (LAKE_SCALE_MAX - 1);
+        lake.style.transform = `scale(${ls.toFixed(3)})`;
+      }
+      if (crater) {
+        crater.style.opacity = String(lakeIn);
+        const cs = 1 - p * (1 - CRATER_SCALE_MIN);
+        crater.style.transform = `translate3d(-50%, 0, 0) scale(${cs.toFixed(3)})`;
       }
 
-      // CRATER: scale down to 0.5 during same span, top-aligned with lake
-      if (craterBg) {
-        const craterScale = 1 - p * (1 - CRATER_SCALE_MIN);
-        craterBg.style.transform = `scale(${craterScale.toFixed(3)})`;
-      }
-
-      // Keep lake pinned to the halfway point of panel2 (updates as you scroll)
-      positionLakeAtPanel2Half();
-
-      // std-sky: move slightly up and fade so clearing looks natural (still stays readable)
+      // std-sky moves slightly up and scales down a bit to help clearing feel
       if (stdWrap) {
         const yUp = -p * (state.vh * STD_EXIT_Y_VH);
         const sDown = 1 - p * (1 - STD_SCALE_MIN);
-        const fade = 1 - smoothstep(0.70, 1.0, p);
-        stdWrap.style.opacity = String(fade);
         stdWrap.style.transform = `translate3d(-50%, -50%, 0) translate3d(0, ${yUp.toFixed(1)}px, 0) scale(${sDown.toFixed(3)})`;
+        stdWrap.style.opacity = String(1 - smoothstep(0.78, 1.0, p));
       }
 
-      // CLOUDS: each moves with unique direction/speed and fades
+      // Safe zone dimensions (in panel1 coordinate space)
       const safeR = Math.min(state.vw, state.vh) * SAFE_RADIUS_VMIN;
 
+      // Animate clouds
       state.layers.forEach((ln) => {
-        const parent = ln.el.closest(".parallax-section");
-        if (!parent) return;
+        const el = ln.el;
 
-        // Base XY from start -> end (percent)
-        const xPct = ln.startX + (ln.endX - ln.startX) * p;
-        const yPct = ln.startY + (ln.endY - ln.startY) * p;
+        // start->end anchors
+        let xPct = ln.startX + (ln.endX - ln.startX) * p;
+        let yPct = ln.startY + (ln.endY - ln.startY) * p;
 
-        // Drift (extra clearing motion)
-        const driftX = ln.dirX * ln.speed * p * (state.vw * 0.42);
-        const driftY = ln.dirY * ln.speed * p * (state.vh * 0.12);
+        // Compute safe zone only in panel 1
+        if (panel1) {
+          const rectW = panel1.clientWidth;
+          const rectH = panel1.clientHeight;
+          const sx = rectW * 0.5;
+          const sy = rectH * 0.5;
 
-        // Subtle float
-        const float = Math.sin((p * 2.0 + ln.idx) * Math.PI) * (8 + (ln.z * 2));
+          // Convert pct to px inside panel1
+          let xPx = (xPct / 100) * rectW;
+          let yPx = (yPct / 100) * rectH;
 
-        // Convert pct to px inside the panel
-        const rect = parent.getBoundingClientRect();
-        let x = (xPct / 100) * rect.width;
-        let y = (yPct / 100) * rect.height;
-
-        // Keep-out zone only on panel 1
-        if (parent.id === "panel-1") {
-          const sx = rect.width * 0.5;
-          const sy = rect.height * 0.5;
-
-          // circle keep-out
-          const dx = x - sx;
-          const dy = y - sy;
+          // Circle keep-out
+          const dx = xPx - sx;
+          const dy = yPx - sy;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < safeR) {
-            const push = (safeR - dist) + 42;
+            const push = (safeR - dist) + 52;
             const nx = dist === 0 ? 1 : dx / dist;
             const ny = dist === 0 ? 0 : dy / dist;
-            x += nx * push;
-            y += ny * push;
+            xPx += nx * push;
+            yPx += ny * push;
           }
 
-          // rectangle keep-out
-          const rectW = rect.width * SAFE_RECT_W;
-          const rectH = rect.height * SAFE_RECT_H;
-          const rx0 = sx - rectW * 0.5;
-          const rx1 = sx + rectW * 0.5;
-          const ry0 = sy - rectH * 0.5;
-          const ry1 = sy + rectH * 0.5;
+          // Rectangle keep-out
+          const rw = rectW * SAFE_RECT_W;
+          const rh = rectH * SAFE_RECT_H;
+          const rx0 = sx - rw * 0.5, rx1 = sx + rw * 0.5;
+          const ry0 = sy - rh * 0.5, ry1 = sy + rh * 0.5;
 
-          if (x > rx0 && x < rx1 && y > ry0 && y < ry1) {
-            // push to nearest horizontal edge
-            const toLeft = x - rx0;
-            const toRight = rx1 - x;
-            x += (toLeft < toRight) ? -(toLeft + 44) : (toRight + 44);
-            y += (y < sy) ? -18 : 24;
+          if (xPx > rx0 && xPx < rx1 && yPx > ry0 && yPx < ry1) {
+            const toLeft = xPx - rx0;
+            const toRight = rx1 - xPx;
+            xPx += (toLeft < toRight) ? -(toLeft + 56) : (toRight + 56);
+            yPx += (yPx < sy) ? -18 : 26;
           }
+
+          // Convert back to pct
+          xPct = (xPx / rectW) * 100;
+          yPct = (yPx / rectH) * 100;
         }
 
-        // Apply transform relative to its own left/top % anchor
-        // We anchor with left/top %, then translate by pixel drift inside panel + float.
-        ln.el.style.left = `${xPct}%`;
-        ln.el.style.top = `${yPct}%`;
-        ln.el.style.transform =
+        // Drift (clearing)
+        const driftX = ln.dirX * ln.speed * ln.drift * p * (state.vw * DRIFT_X_MULT);
+        const driftY = ln.dirY * ln.speed * ln.drift * p * (state.vh * DRIFT_Y_MULT);
+
+        // Subtle float
+        const float = Math.sin((p * 2.0 + ln.i) * Math.PI) * (8 + ln.z * 2);
+
+        el.style.left = `${xPct}%`;
+        el.style.top = `${yPct}%`;
+
+        el.style.transform =
           `translate3d(-50%, -50%, 0) translate3d(${driftX.toFixed(1)}px, ${(driftY + float).toFixed(1)}px, 0)`;
 
-        // Fade out as it clears
-        const fade = 1 - smoothstep(0.10, ln.fadeAt, p);
-        ln.el.style.opacity = String(clamp(fade, 0, 1));
+        // Fade as it clears
+        el.style.opacity = String(1 - smoothstep(0.12, 0.98, p));
+      });
+    }
+
+    // Map poster toggle (this was missing for you before)
+    function toggleMapPoster() {
+      if (!mapPoster) return;
+      mapPoster.classList.toggle("is-shown");
+    }
+
+    if (mapTrigger) {
+      mapTrigger.addEventListener("click", toggleMapPoster);
+      mapTrigger.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleMapPoster();
+        }
       });
     }
 
@@ -255,9 +248,7 @@
     }
 
     setup();
-    render();
-
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", () => { setup(); render(); }, { passive: true });
+    window.addEventListener("resize", () => { setup(); }, { passive: true });
   }
 })();
