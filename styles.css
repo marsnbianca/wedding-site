@@ -28,15 +28,15 @@ body {
   overflow-x: hidden;
 }
 
-/* SKY BACKGROUND: single appearance, animates scale via JS.
-   No repeat; background covers and is centered. Transform-origin top center so it scales downward as requested.
+/* SKY BACKGROUND (replacement)
+   Fixed to viewport so it "sits on top" and scales up as you scroll.
+   It visually covers the whole screen, but you control how long it scales in JS.
 */
 .sky-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
+  position: fixed;
+  inset: 0;
   width: 100%;
-  height: calc(var(--panel-height) * var(--sky-span-multiplier)); /* cover first ~3 panels */
+  height: 100%;
   background-image: url("assets/parallax/sky1.png");
   background-repeat: no-repeat;
   background-size: cover;
@@ -45,6 +45,13 @@ body {
   will-change: transform;
   z-index: 0;
   pointer-events: none;
+}
+
+/* Clouds: make sure opacity + transform are smooth */
+.cloud-layer {
+  opacity: 0.98;
+  mix-blend-mode: normal;
+  will-change: transform, opacity;
 }
 
 /* Parallax sections sizing uses variable and caps max height */
